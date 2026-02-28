@@ -83,7 +83,7 @@ export async function compareElections(data: {
 }
 
 export async function simulateScenario(data: {
-    candidateName: string;
+    candidate: string;
     party: string;
     currentVotes: number;
     scenario: string;

@@ -2770,7 +2770,7 @@ export default function ElectionAnalysisScreen() {
                                         try {
                                             const cities = getProjectionBaseData().map(c => ({ name: c.name, votes: c.votes }));
                                             const result = await simulateScenario({
-                                                candidateName: 'ADELMO SOARES',
+                                                candidate: 'ADELMO SOARES',
                                                 party: 'PSB',
                                                 currentVotes: 34365,
                                                 scenario: iaScenarioInput,
