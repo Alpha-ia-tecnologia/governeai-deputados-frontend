@@ -63,10 +63,12 @@ import {
     getProjectionScenarios,
     getProjectionBaseData,
     calculateProjection,
+    setElectionYear,
+    getElectionYear,
     ProjectionScenario,
     ProjectionResult,
 } from "@/data/mockDeputadoData";
-import { analyzeProjection as aiAnalyzeProjection, sendChatMessage, ChatMessage as AIChatMessage, CandidateContext } from "@/services/aiService";
+import { analyzeProjection as aiAnalyzeProjection, sendChatMessage, analyzeElection, compareElections, simulateScenario, ChatMessage as AIChatMessage, CandidateContext, ElectionAnalysisResult, ElectionComparisonResult, ScenarioSimulationResult } from "@/services/aiService";
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -94,7 +96,7 @@ const PARTY_COLORS: Record<string, string> = {
     'default': '#94A3B8',
 };
 
-type TabKey = 'resumo' | 'secoes' | 'bairros' | 'insights' | 'comparativo' | 'projecoes';
+type TabKey = 'resumo' | 'secoes' | 'bairros' | 'insights' | 'comparativo' | 'projecoes' | 'ia';
 
 interface Summary {
     totalVotes: number;
@@ -210,6 +212,25 @@ export default function ElectionAnalysisScreen() {
     const [chatInput, setChatInput] = useState('');
     const [chatLoading, setChatLoading] = useState(false);
     const [chatCandidate, setChatCandidate] = useState<CandidateContext | null>(null);
+
+    // Year Selector
+    const [selectedElectionYear, setSelectedElectionYear] = useState<number>(2022);
+
+    // IA Eleitoral DeepSeek
+    const [iaElectoralAnalysis, setIaElectoralAnalysis] = useState<ElectionAnalysisResult | null>(null);
+    const [iaComparison, setIaComparison] = useState<ElectionComparisonResult | null>(null);
+    const [iaSimulation, setIaSimulation] = useState<ScenarioSimulationResult | null>(null);
+    const [iaLoading, setIaLoading] = useState(false);
+    const [iaActiveSection, setIaActiveSection] = useState<'analysis' | 'comparison' | 'simulation' | 'chat'>('analysis');
+    const [iaScenarioInput, setIaScenarioInput] = useState('');
+    const [iaScenarioDetails, setIaScenarioDetails] = useState('');
+
+    // Re-fetch when year changes
+    const handleYearChange = (year: number) => {
+        setSelectedElectionYear(year);
+        setElectionYear(year);
+        fetchData();
+    };
 
     useEffect(() => {
         fetchData();
@@ -516,6 +537,28 @@ export default function ElectionAnalysisScreen() {
     const getPartyColor = (party: string) => PARTY_COLORS[party] || PARTY_COLORS.default;
 
     // ==================== TAB NAVIGATION ====================
+    // ==================== YEAR SELECTOR ====================
+    const renderYearSelector = () => (
+        <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 10, gap: 8 }}>
+            <Text style={{ fontSize: 13, fontWeight: '600', color: Colors.light.textSecondary }}>Eleição:</Text>
+            {[2022, 2018].map(year => (
+                <TouchableOpacity
+                    key={year}
+                    onPress={() => handleYearChange(year)}
+                    style={{
+                        paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20,
+                        backgroundColor: selectedElectionYear === year ? Colors.light.primary : '#F3F4F6',
+                        ...Platform.select({ web: { boxShadow: selectedElectionYear === year ? '0 2px 8px rgba(0,96,255,0.3)' : 'none' }, default: {} }),
+                    }}
+                >
+                    <Text style={{ fontSize: 14, fontWeight: '700', color: selectedElectionYear === year ? '#FFF' : '#6B7280' }}>
+                        {year}
+                    </Text>
+                </TouchableOpacity>
+            ))}
+        </View>
+    );
+
     const renderTabs = () => (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabsContainer}>
             {[
@@ -524,7 +567,10 @@ export default function ElectionAnalysisScreen() {
                 { key: 'secoes' as TabKey, label: 'Seções', icon: LayoutGrid },
                 { key: 'insights' as TabKey, label: 'Insights', icon: Lightbulb },
                 { key: 'comparativo' as TabKey, label: 'Comparar', icon: GitCompare },
-                ...(isDeputadoPosition(selectedPosition) ? [{ key: 'projecoes' as TabKey, label: 'Projeções', icon: TrendingUp }] : []),
+                ...(isDeputadoPosition(selectedPosition) ? [
+                    { key: 'projecoes' as TabKey, label: 'Projeções', icon: TrendingUp },
+                    { key: 'ia' as TabKey, label: '🤖 IA', icon: Zap },
+                ] : []),
             ].map(tab => (
                 <TouchableOpacity
                     key={tab.key}
@@ -634,40 +680,44 @@ export default function ElectionAnalysisScreen() {
                         <View style={[styles.insightCard, { backgroundColor: '#FF6B00', borderLeftColor: '#FF6B00', padding: 20 }]}>
                             <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
                                 <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: '#FFF', alignItems: 'center', justifyContent: 'center', marginRight: 14 }}>
-                                    <Text style={{ fontSize: 16, fontWeight: '800', color: '#FF6B00' }}>40000</Text>
+                                    <Text style={{ fontSize: 14, fontWeight: '800', color: '#FF6B00' }}>{adelmoInsights.candidateProfile.number2022}</Text>
                                 </View>
                                 <View style={{ flex: 1 }}>
-                                    <Text style={{ fontSize: 20, fontWeight: '800', color: '#FFF' }}>ADELMO SOARES</Text>
-                                    <Text style={{ fontSize: 14, color: '#FFE0C0', marginTop: 2 }}>PSB • Deputado Estadual</Text>
+                                    <Text style={{ fontSize: 20, fontWeight: '800', color: '#FFF' }}>{adelmoInsights.candidateProfile.name}</Text>
+                                    <Text style={{ fontSize: 14, color: '#FFE0C0', marginTop: 2 }}>{selectedElectionYear === 2018 ? adelmoInsights.candidateProfile.party2018 : adelmoInsights.candidateProfile.party2022} • Deputado Estadual</Text>
                                 </View>
                             </View>
                             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
                                 <View style={{ backgroundColor: '#FFFFFF30', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 8, minWidth: '30%' }}>
-                                    <Text style={{ fontSize: 20, fontWeight: '800', color: '#FFF' }}>{formatNumber(adelmoInsights.performanceMetrics.totalVotes)}</Text>
-                                    <Text style={{ fontSize: 11, color: '#FFE0C0' }}>Total de Votos</Text>
+                                    <Text style={{ fontSize: 20, fontWeight: '800', color: '#FFF' }}>
+                                        {formatNumber(selectedElectionYear === 2018 ? adelmoInsights.electionResults.year2018.totalVotes : adelmoInsights.electionResults.year2022.totalVotes)}
+                                    </Text>
+                                    <Text style={{ fontSize: 11, color: '#FFE0C0' }}>Total de Votos ({selectedElectionYear})</Text>
                                 </View>
                                 <View style={{ backgroundColor: '#FFFFFF30', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 8 }}>
-                                    <Text style={{ fontSize: 20, fontWeight: '800', color: '#FFF' }}>{adelmoInsights.rank}º</Text>
-                                    <Text style={{ fontSize: 11, color: '#FFE0C0' }}>Posição Geral</Text>
+                                    <Text style={{ fontSize: 20, fontWeight: '800', color: '#FFF' }}>
+                                        {selectedElectionYear === 2018 ? adelmoInsights.electionResults.year2018.result : adelmoInsights.electionResults.year2022.result}
+                                    </Text>
+                                    <Text style={{ fontSize: 11, color: '#FFE0C0' }}>Resultado</Text>
                                 </View>
                                 <View style={{ backgroundColor: '#FFFFFF30', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 8 }}>
-                                    <Text style={{ fontSize: 20, fontWeight: '800', color: '#FFF' }}>{adelmoInsights.performanceMetrics.percentage}%</Text>
-                                    <Text style={{ fontSize: 11, color: '#FFE0C0' }}>do Total</Text>
+                                    <Text style={{ fontSize: 20, fontWeight: '800', color: '#FFF' }}>
+                                        {selectedElectionYear === 2018 ? adelmoInsights.electionResults.year2018.municipalitiesWithVotes : adelmoInsights.electionResults.year2022.municipalitiesWithVotes}
+                                    </Text>
+                                    <Text style={{ fontSize: 11, color: '#FFE0C0' }}>Municípios com votos</Text>
                                 </View>
                             </View>
                         </View>
 
-                        {/* Métricas Detalhadas */}
+                        {/* Evolução 2018→2022 */}
                         <View style={{ marginTop: 16 }}>
-                            <Text style={[styles.vereadorSectionTitle, { fontSize: 16, marginBottom: 10 }]}>📊 Métricas de Performance</Text>
+                            <Text style={[styles.vereadorSectionTitle, { fontSize: 16, marginBottom: 10 }]}>📊 Evolução 2018 → 2022</Text>
                             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
                                 {[
-                                    { label: 'Votos/Zona (média)', value: formatNumber(adelmoInsights.performanceMetrics.avgVotesPerZone), color: '#3B82F6' },
-                                    { label: 'Votos/Seção (média)', value: formatNumber(adelmoInsights.performanceMetrics.avgVotesPerSection), color: '#10B981' },
-                                    { label: 'Índice Concentração', value: `${adelmoInsights.performanceMetrics.voteConcentrationIndex}%`, color: '#8B5CF6' },
-                                    { label: 'Ranking no PSB', value: `${adelmoInsights.performanceMetrics.partyRankWithinPSB}º de 2`, color: '#FF6B00' },
-                                    { label: 'PSB Total', value: formatNumber(adelmoInsights.performanceMetrics.PSBTotalVotes), color: '#FF6B00' },
-                                    { label: 'Gap p/ subir', value: `+${formatNumber(adelmoInsights.performanceMetrics.votesNeededForNextRank)}`, color: '#EF4444' },
+                                    { label: 'Diferença de Votos', value: `${adelmoInsights.evolution.voteDifference > 0 ? '+' : ''}${formatNumber(adelmoInsights.evolution.voteDifference)}`, color: adelmoInsights.evolution.voteDifference > 0 ? '#10B981' : '#EF4444' },
+                                    { label: 'Variação %', value: `${adelmoInsights.evolution.percentChange}%`, color: '#8B5CF6' },
+                                    { label: 'Mudança de Partido', value: adelmoInsights.evolution.partyChange, color: '#FF6B00' },
+                                    { label: 'Municípios +/-', value: `${adelmoInsights.evolution.municipalitiesDiff > 0 ? '+' : ''}${adelmoInsights.evolution.municipalitiesDiff}`, color: '#3B82F6' },
                                 ].map((m, i) => (
                                     <View key={i} style={{ backgroundColor: '#FFF', borderRadius: 10, padding: 12, borderLeftWidth: 3, borderLeftColor: m.color, minWidth: '48%', flex: 1, ...Platform.select({ web: { boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }, default: { shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 3, elevation: 1 } }) }}>
                                         <Text style={{ fontSize: 18, fontWeight: '700', color: m.color }}>{m.value}</Text>
@@ -677,58 +727,45 @@ export default function ElectionAnalysisScreen() {
                             </View>
                         </View>
 
-                        {/* Distribuição Geográfica */}
+                        {/* Mudanças por Cidade (Evolução) */}
                         <View style={{ marginTop: 20 }}>
-                            <Text style={[styles.vereadorSectionTitle, { fontSize: 16, marginBottom: 10 }]}>🗺️ Distribuição Geográfica por Zona</Text>
-                            {adelmoInsights.zoneDistribution.map((zone: any) => (
-                                <View key={zone.zone} style={{ backgroundColor: '#FFF', borderRadius: 10, padding: 14, marginBottom: 8, flexDirection: 'row', alignItems: 'center', ...Platform.select({ web: { boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }, default: { shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 3, elevation: 1 } }) }}>
-                                    <View style={{ width: 50, alignItems: 'center' }}>
-                                        <Text style={{ fontSize: 13, fontWeight: '700', color: '#374151' }}>Z{zone.zone}</Text>
-                                        {zone.isStronghold && <Text style={{ fontSize: 9, color: '#10B981', fontWeight: '600' }}>FORTE</Text>}
+                            <Text style={[styles.vereadorSectionTitle, { fontSize: 16, marginBottom: 10 }]}>🏙️ Variação por Cidade</Text>
+                            {adelmoInsights.evolution.keyChanges.map((change: any, i: number) => (
+                                <View key={i} style={{ backgroundColor: '#FFF', borderRadius: 10, padding: 14, marginBottom: 8, flexDirection: 'row', alignItems: 'center', borderLeftWidth: 3, borderLeftColor: change.diff > 0 ? '#10B981' : '#EF4444', ...Platform.select({ web: { boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }, default: { shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 3, elevation: 1 } }) }}>
+                                    <View style={{ flex: 1 }}>
+                                        <Text style={{ fontSize: 13, fontWeight: '700', color: '#374151' }}>{change.city}</Text>
+                                        <Text style={{ fontSize: 11, color: '#6B7280' }}>2018: {formatNumber(change.votes2018)} → 2022: {formatNumber(change.votes2022)}</Text>
                                     </View>
-                                    <View style={{ flex: 1, marginHorizontal: 10 }}>
-                                        <View style={{ height: 20, backgroundColor: '#F3F4F6', borderRadius: 10, overflow: 'hidden' }}>
-                                            <View style={{ height: '100%', width: `${zone.percentage}%`, backgroundColor: zone.isStronghold ? '#FF6B00' : '#9CA3AF', borderRadius: 10 }} />
-                                        </View>
-                                    </View>
-                                    <View style={{ alignItems: 'flex-end', minWidth: 75 }}>
-                                        <Text style={{ fontSize: 14, fontWeight: '700', color: '#1F2937' }}>{formatNumber(zone.votes)}</Text>
-                                        <Text style={{ fontSize: 11, color: '#6B7280' }}>{zone.percentage}%</Text>
+                                    <View style={{ alignItems: 'flex-end' }}>
+                                        <Text style={{ fontSize: 14, fontWeight: '700', color: change.diff > 0 ? '#10B981' : '#EF4444' }}>
+                                            {change.diff > 0 ? '+' : ''}{formatNumber(change.diff)}
+                                        </Text>
                                     </View>
                                 </View>
                             ))}
                         </View>
 
-                        {/* Top e Piores Seções */}
-                        <View style={{ flexDirection: 'row', gap: 10, marginTop: 20 }}>
-                            <View style={{ flex: 1, backgroundColor: '#F0FDF4', borderRadius: 12, padding: 14 }}>
-                                <Text style={{ fontSize: 14, fontWeight: '700', color: '#166534', marginBottom: 8 }}>✅ Top Seções</Text>
-                                {adelmoInsights.topSections.map((s: any, i: number) => (
-                                    <View key={i} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4, borderBottomWidth: i < adelmoInsights.topSections.length - 1 ? 1 : 0, borderBottomColor: '#D1FAE5' }}>
-                                        <Text style={{ fontSize: 11, color: '#166534' }}>Z{s.zone}/S{s.section}</Text>
-                                        <Text style={{ fontSize: 11, fontWeight: '600', color: '#166534' }}>{s.votes}</Text>
+                        {/* Top Cidades da Eleição Selecionada */}
+                        <View style={{ marginTop: 20 }}>
+                            <Text style={[styles.vereadorSectionTitle, { fontSize: 16, marginBottom: 10 }]}>🗺️ Top 10 Cidades ({selectedElectionYear})</Text>
+                            {(selectedElectionYear === 2018 ? adelmoInsights.electionResults.year2018.topCities : adelmoInsights.electionResults.year2022.topCities).map((c: any, i: number) => (
+                                <View key={i} style={{ backgroundColor: '#FFF', borderRadius: 10, padding: 12, marginBottom: 6, flexDirection: 'row', alignItems: 'center', ...Platform.select({ web: { boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }, default: { shadowColor: '#000', shadowOpacity: 0.03, shadowRadius: 2, elevation: 1 } }) }}>
+                                    <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: i < 3 ? '#FF6B00' : '#E5E7EB', justifyContent: 'center', alignItems: 'center', marginRight: 10 }}>
+                                        <Text style={{ fontSize: 11, fontWeight: '700', color: i < 3 ? '#FFF' : '#6B7280' }}>{i + 1}</Text>
                                     </View>
-                                ))}
-                            </View>
-                            <View style={{ flex: 1, backgroundColor: '#FEF2F2', borderRadius: 12, padding: 14 }}>
-                                <Text style={{ fontSize: 14, fontWeight: '700', color: '#991B1B', marginBottom: 8 }}>⚠️ Seções Fracas</Text>
-                                {adelmoInsights.weakSections.map((s: any, i: number) => (
-                                    <View key={i} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4, borderBottomWidth: i < adelmoInsights.weakSections.length - 1 ? 1 : 0, borderBottomColor: '#FECACA' }}>
-                                        <Text style={{ fontSize: 11, color: '#991B1B' }}>Z{s.zone}/S{s.section}</Text>
-                                        <Text style={{ fontSize: 11, fontWeight: '600', color: '#991B1B' }}>{s.votes}</Text>
-                                    </View>
-                                ))}
-                            </View>
+                                    <Text style={{ flex: 1, fontSize: 13, fontWeight: '600', color: '#1F2937' }}>{c.city}</Text>
+                                    <Text style={{ fontSize: 14, fontWeight: '700', color: '#FF6B00' }}>{formatNumber(c.votes)}</Text>
+                                </View>
+                            ))}
                         </View>
 
-                        {/* Análise SWOT */}
+                        {/* SWOT Simplificado (Forças / Fraquezas / Oportunidades) */}
                         <View style={{ marginTop: 20 }}>
-                            <Text style={[styles.vereadorSectionTitle, { fontSize: 16, marginBottom: 10 }]}>📋 Análise SWOT</Text>
+                            <Text style={[styles.vereadorSectionTitle, { fontSize: 16, marginBottom: 10 }]}>📋 Análise Estratégica</Text>
                             {[
-                                { title: '💪 Forças', items: adelmoInsights.swot.strengths, bg: '#F0FDF4', border: '#10B981', text: '#166534' },
-                                { title: '⚠️ Fraquezas', items: adelmoInsights.swot.weaknesses, bg: '#FEF2F2', border: '#EF4444', text: '#991B1B' },
-                                { title: '🚀 Oportunidades', items: adelmoInsights.swot.opportunities, bg: '#EFF6FF', border: '#3B82F6', text: '#1E40AF' },
-                                { title: '🔴 Ameaças', items: adelmoInsights.swot.threats, bg: '#FFF7ED', border: '#F59E0B', text: '#92400E' },
+                                { title: '💪 Forças', items: adelmoInsights.strengths, bg: '#F0FDF4', border: '#10B981', text: '#166534' },
+                                { title: '⚠️ Fraquezas', items: adelmoInsights.weaknesses, bg: '#FEF2F2', border: '#EF4444', text: '#991B1B' },
+                                { title: '🚀 Oportunidades', items: adelmoInsights.opportunities, bg: '#EFF6FF', border: '#3B82F6', text: '#1E40AF' },
                             ].map((section, si) => (
                                 <View key={si} style={{ backgroundColor: section.bg, borderRadius: 12, padding: 14, marginBottom: 10, borderLeftWidth: 4, borderLeftColor: section.border }}>
                                     <Text style={{ fontSize: 14, fontWeight: '700', color: section.text, marginBottom: 8 }}>{section.title}</Text>
@@ -742,70 +779,13 @@ export default function ElectionAnalysisScreen() {
                             ))}
                         </View>
 
-                        {/* Comparação com Concorrentes Diretos */}
+                        {/* Histórico Político */}
                         <View style={{ marginTop: 20 }}>
-                            <Text style={[styles.vereadorSectionTitle, { fontSize: 16, marginBottom: 10 }]}>⚔️ Concorrentes Diretos</Text>
-                            {adelmoInsights.competitorComparison.map((comp: any, i: number) => (
-                                <View key={i} style={{
-                                    backgroundColor: comp.status === 'VOCÊ' ? '#FF6B0015' : '#FFF',
-                                    borderRadius: 12,
-                                    padding: 14,
-                                    marginBottom: 8,
-                                    borderLeftWidth: 4,
-                                    borderLeftColor: comp.status === 'VOCÊ' ? '#FF6B00' : comp.status === 'À FRENTE' ? '#EF4444' : '#10B981',
-                                    flexDirection: 'row',
-                                    alignItems: 'center',
-                                    ...Platform.select({ web: { boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }, default: { shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 3, elevation: 1 } }),
-                                }}>
-                                    <View style={{ flex: 1 }}>
-                                        <Text style={{ fontSize: 14, fontWeight: comp.status === 'VOCÊ' ? '800' : '600', color: '#1F2937' }}>{comp.name}</Text>
-                                        <Text style={{ fontSize: 12, color: '#6B7280' }}>{comp.party}</Text>
-                                    </View>
-                                    <View style={{ alignItems: 'flex-end' }}>
-                                        <Text style={{ fontSize: 16, fontWeight: '700', color: '#1F2937' }}>{formatNumber(comp.votes)}</Text>
-                                        <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 2 }}>
-                                            <Text style={{
-                                                fontSize: 11,
-                                                fontWeight: '600',
-                                                color: comp.status === 'VOCÊ' ? '#FF6B00' : comp.status === 'À FRENTE' ? '#EF4444' : '#10B981',
-                                                backgroundColor: comp.status === 'VOCÊ' ? '#FF6B0020' : comp.status === 'À FRENTE' ? '#FEE2E2' : '#D1FAE5',
-                                                paddingHorizontal: 8,
-                                                paddingVertical: 2,
-                                                borderRadius: 8,
-                                            }}>{comp.status}{comp.difference !== 0 ? ` (${comp.difference > 0 ? '+' : ''}${formatNumber(comp.difference)})` : ''}</Text>
-                                        </View>
-                                    </View>
-                                </View>
-                            ))}
-                        </View>
-
-                        {/* Recomendações Estratégicas */}
-                        <View style={{ marginTop: 20 }}>
-                            <Text style={[styles.vereadorSectionTitle, { fontSize: 16, marginBottom: 10 }]}>🎯 Recomendações Estratégicas</Text>
-                            {adelmoInsights.recommendations.map((rec: any, i: number) => (
-                                <View key={i} style={{
-                                    backgroundColor: '#FFF',
-                                    borderRadius: 12,
-                                    padding: 16,
-                                    marginBottom: 10,
-                                    borderLeftWidth: 4,
-                                    borderLeftColor: rec.color,
-                                    ...Platform.select({ web: { boxShadow: '0 2px 4px rgba(0,0,0,0.06)' }, default: { shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 } }),
-                                }}>
-                                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
-                                        <Text style={{
-                                            fontSize: 10,
-                                            fontWeight: '700',
-                                            color: '#FFF',
-                                            backgroundColor: rec.color,
-                                            paddingHorizontal: 8,
-                                            paddingVertical: 2,
-                                            borderRadius: 6,
-                                            marginRight: 8,
-                                        }}>{rec.priority}</Text>
-                                        <Text style={{ fontSize: 14, fontWeight: '700', color: '#1F2937', flex: 1 }}>{rec.title}</Text>
-                                    </View>
-                                    <Text style={{ fontSize: 13, color: '#4B5563', lineHeight: 20 }}>{rec.description}</Text>
+                            <Text style={[styles.vereadorSectionTitle, { fontSize: 16, marginBottom: 10 }]}>📜 Trajetória Política</Text>
+                            {adelmoInsights.candidateProfile.politicalHistory.map((item: string, i: number) => (
+                                <View key={i} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+                                    <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#FF6B00', marginRight: 10 }} />
+                                    <Text style={{ fontSize: 13, color: '#1F2937', flex: 1, lineHeight: 18 }}>{item}</Text>
                                 </View>
                             ))}
                         </View>
@@ -2561,6 +2541,9 @@ export default function ElectionAnalysisScreen() {
                     </View>
                 )}
 
+                {/* Year Selector */}
+                {renderYearSelector()}
+
                 {/* Tabs */}
                 {renderTabs()}
 
@@ -2589,7 +2572,338 @@ export default function ElectionAnalysisScreen() {
                 {activeTab === 'comparativo' && renderComparison()}
                 {activeTab === 'projecoes' && isDeputadoPosition(selectedPosition) && renderProjections()}
 
-                <View style={{ height: 40 }} />
+                {/* IA DeepSeek Tab */}
+                {activeTab === 'ia' && isDeputadoPosition(selectedPosition) && (
+                    <View style={{ padding: 16 }}>
+                        {/* IA Sub-tabs */}
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
+                            {[
+                                { key: 'analysis' as const, label: '📊 Análise IA', icon: '📊' },
+                                { key: 'comparison' as const, label: '⚖️ Comparativo', icon: '⚖️' },
+                                { key: 'simulation' as const, label: '🎯 Simulação', icon: '🎯' },
+                                { key: 'chat' as const, label: '💬 Chat IA', icon: '💬' },
+                            ].map(sub => (
+                                <TouchableOpacity
+                                    key={sub.key}
+                                    onPress={() => setIaActiveSection(sub.key)}
+                                    style={{
+                                        paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20, marginRight: 8,
+                                        backgroundColor: iaActiveSection === sub.key ? '#8B5CF6' : '#F3F4F6',
+                                    }}
+                                >
+                                    <Text style={{ fontSize: 13, fontWeight: '600', color: iaActiveSection === sub.key ? '#FFF' : '#6B7280' }}>
+                                        {sub.label}
+                                    </Text>
+                                </TouchableOpacity>
+                            ))}
+                        </ScrollView>
+
+                        {/* IA Analysis Section */}
+                        {iaActiveSection === 'analysis' && (
+                            <View>
+                                <TouchableOpacity
+                                    onPress={async () => {
+                                        setIaLoading(true);
+                                        try {
+                                            const competitors = getMockDeputadoTopCandidates(10)
+                                                .filter(c => c.name !== 'ADELMO SOARES')
+                                                .map(c => ({ candidateName: c.name, party: c.party, totalVotes: c.totalVotes }));
+                                            const result = await analyzeElection({
+                                                candidateName: 'ADELMO SOARES',
+                                                party: selectedElectionYear === 2018 ? 'PCdoB' : 'PSB',
+                                                totalVotes: selectedElectionYear === 2018 ? 43974 : 34365,
+                                                year: selectedElectionYear,
+                                                competitors,
+                                            });
+                                            setIaElectoralAnalysis(result);
+                                        } catch (e: any) { console.error(e); }
+                                        setIaLoading(false);
+                                    }}
+                                    disabled={iaLoading}
+                                    style={{
+                                        backgroundColor: '#8B5CF6', borderRadius: 12, padding: 16,
+                                        alignItems: 'center', opacity: iaLoading ? 0.6 : 1, marginBottom: 16,
+                                    }}
+                                >
+                                    {iaLoading ? (
+                                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                                            <ActivityIndicator color="#FFF" size="small" />
+                                            <Text style={{ fontSize: 15, fontWeight: '700', color: '#FFF' }}>Analisando com IA...</Text>
+                                        </View>
+                                    ) : (
+                                        <Text style={{ fontSize: 15, fontWeight: '700', color: '#FFF' }}>🤖 Gerar Análise IA ({selectedElectionYear})</Text>
+                                    )}
+                                </TouchableOpacity>
+
+                                {iaElectoralAnalysis && (
+                                    <View>
+                                        <View style={{ backgroundColor: '#FFF', borderRadius: 12, padding: 16, marginBottom: 12, borderLeftWidth: 4, borderLeftColor: '#8B5CF6' }}>
+                                            <Text style={{ fontSize: 15, fontWeight: '700', color: '#1F2937', marginBottom: 8 }}>Análise Geral</Text>
+                                            <Text style={{ fontSize: 13, color: '#4B5563', lineHeight: 20 }}>{iaElectoralAnalysis.analysis}</Text>
+                                        </View>
+                                        {iaElectoralAnalysis.strengths?.length > 0 && (
+                                            <View style={{ backgroundColor: '#F0FDF4', borderRadius: 12, padding: 14, marginBottom: 10, borderLeftWidth: 4, borderLeftColor: '#10B981' }}>
+                                                <Text style={{ fontSize: 14, fontWeight: '700', color: '#166534', marginBottom: 8 }}>💪 Pontos Fortes</Text>
+                                                {iaElectoralAnalysis.strengths.map((s, i) => (
+                                                    <Text key={i} style={{ fontSize: 12, color: '#166534', marginBottom: 4, lineHeight: 18 }}>• {s}</Text>
+                                                ))}
+                                            </View>
+                                        )}
+                                        {iaElectoralAnalysis.weaknesses?.length > 0 && (
+                                            <View style={{ backgroundColor: '#FEF2F2', borderRadius: 12, padding: 14, marginBottom: 10, borderLeftWidth: 4, borderLeftColor: '#EF4444' }}>
+                                                <Text style={{ fontSize: 14, fontWeight: '700', color: '#991B1B', marginBottom: 8 }}>⚠️ Pontos Fracos</Text>
+                                                {iaElectoralAnalysis.weaknesses.map((w, i) => (
+                                                    <Text key={i} style={{ fontSize: 12, color: '#991B1B', marginBottom: 4, lineHeight: 18 }}>• {w}</Text>
+                                                ))}
+                                            </View>
+                                        )}
+                                        {iaElectoralAnalysis.opportunities?.length > 0 && (
+                                            <View style={{ backgroundColor: '#EFF6FF', borderRadius: 12, padding: 14, marginBottom: 10, borderLeftWidth: 4, borderLeftColor: '#3B82F6' }}>
+                                                <Text style={{ fontSize: 14, fontWeight: '700', color: '#1E40AF', marginBottom: 8 }}>🚀 Oportunidades</Text>
+                                                {iaElectoralAnalysis.opportunities.map((o, i) => (
+                                                    <Text key={i} style={{ fontSize: 12, color: '#1E40AF', marginBottom: 4, lineHeight: 18 }}>• {o}</Text>
+                                                ))}
+                                            </View>
+                                        )}
+                                    </View>
+                                )}
+                            </View>
+                        )}
+
+                        {/* IA Comparison Section */}
+                        {iaActiveSection === 'comparison' && (
+                            <View>
+                                <TouchableOpacity
+                                    onPress={async () => {
+                                        setIaLoading(true);
+                                        try {
+                                            const result = await compareElections({
+                                                candidateName: 'ADELMO SOARES',
+                                                election2018: { party: 'PCdoB', votes: 43974, result: 'ELEITO', municipalities: 209 },
+                                                election2022: { party: 'PSB', votes: 34365, result: '2º SUPLENTE', municipalities: 195 },
+                                            });
+                                            setIaComparison(result);
+                                        } catch (e: any) { console.error(e); }
+                                        setIaLoading(false);
+                                    }}
+                                    disabled={iaLoading}
+                                    style={{
+                                        backgroundColor: '#F59E0B', borderRadius: 12, padding: 16,
+                                        alignItems: 'center', opacity: iaLoading ? 0.6 : 1, marginBottom: 16,
+                                    }}
+                                >
+                                    {iaLoading ? (
+                                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                                            <ActivityIndicator color="#FFF" size="small" />
+                                            <Text style={{ fontSize: 15, fontWeight: '700', color: '#FFF' }}>Comparando eleições...</Text>
+                                        </View>
+                                    ) : (
+                                        <Text style={{ fontSize: 15, fontWeight: '700', color: '#FFF' }}>⚖️ Comparar 2018 vs 2022</Text>
+                                    )}
+                                </TouchableOpacity>
+
+                                {/* Quick Stats Comparison */}
+                                <View style={{ flexDirection: 'row', gap: 10, marginBottom: 16 }}>
+                                    <View style={{ flex: 1, backgroundColor: '#FFF', borderRadius: 12, padding: 14, borderLeftWidth: 4, borderLeftColor: '#10B981' }}>
+                                        <Text style={{ fontSize: 11, color: '#6B7280' }}>2018 — PCdoB</Text>
+                                        <Text style={{ fontSize: 20, fontWeight: '800', color: '#10B981' }}>43.974</Text>
+                                        <Text style={{ fontSize: 11, color: '#10B981', fontWeight: '600' }}>ELEITO ✓</Text>
+                                    </View>
+                                    <View style={{ flex: 1, backgroundColor: '#FFF', borderRadius: 12, padding: 14, borderLeftWidth: 4, borderLeftColor: '#FF6B00' }}>
+                                        <Text style={{ fontSize: 11, color: '#6B7280' }}>2022 — PSB</Text>
+                                        <Text style={{ fontSize: 20, fontWeight: '800', color: '#FF6B00' }}>34.365</Text>
+                                        <Text style={{ fontSize: 11, color: '#EF4444', fontWeight: '600' }}>-21.8% ↓</Text>
+                                    </View>
+                                </View>
+
+                                {iaComparison && (
+                                    <View>
+                                        <View style={{ backgroundColor: '#FFF', borderRadius: 12, padding: 16, marginBottom: 12, borderLeftWidth: 4, borderLeftColor: '#F59E0B' }}>
+                                            <Text style={{ fontSize: 15, fontWeight: '700', color: '#1F2937', marginBottom: 8 }}>Análise Comparativa</Text>
+                                            <Text style={{ fontSize: 13, color: '#4B5563', lineHeight: 20 }}>{iaComparison.comparison}</Text>
+                                        </View>
+                                        {iaComparison.evolution && (
+                                            <View style={{ backgroundColor: '#EFF6FF', borderRadius: 12, padding: 14, marginBottom: 10, borderLeftWidth: 4, borderLeftColor: '#3B82F6' }}>
+                                                <Text style={{ fontSize: 14, fontWeight: '700', color: '#1E40AF', marginBottom: 8 }}>📈 Evolução</Text>
+                                                <Text style={{ fontSize: 12, color: '#1E40AF', lineHeight: 18 }}>{iaComparison.evolution}</Text>
+                                            </View>
+                                        )}
+                                        {iaComparison.recommendations?.length > 0 && (
+                                            <View style={{ backgroundColor: '#FFF7ED', borderRadius: 12, padding: 14, borderLeftWidth: 4, borderLeftColor: '#F59E0B' }}>
+                                                <Text style={{ fontSize: 14, fontWeight: '700', color: '#92400E', marginBottom: 8 }}>🎯 Recomendações</Text>
+                                                {iaComparison.recommendations.map((r, i) => (
+                                                    <Text key={i} style={{ fontSize: 12, color: '#92400E', marginBottom: 4, lineHeight: 18 }}>• {r}</Text>
+                                                ))}
+                                            </View>
+                                        )}
+                                    </View>
+                                )}
+                            </View>
+                        )}
+
+                        {/* IA Simulation Section */}
+                        {iaActiveSection === 'simulation' && (
+                            <View>
+                                <View style={{ backgroundColor: '#FFF', borderRadius: 12, padding: 16, marginBottom: 12 }}>
+                                    <Text style={{ fontSize: 14, fontWeight: '700', color: '#1F2937', marginBottom: 10 }}>Descreva o cenário:</Text>
+                                    <TextInput
+                                        value={iaScenarioInput}
+                                        onChangeText={setIaScenarioInput}
+                                        placeholder="Ex: Cenário otimista com aliança forte com o governador"
+                                        placeholderTextColor="#9CA3AF"
+                                        style={{ borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 10, padding: 12, fontSize: 14, color: '#1F2937', marginBottom: 10 }}
+                                    />
+                                    <TextInput
+                                        value={iaScenarioDetails}
+                                        onChangeText={setIaScenarioDetails}
+                                        placeholder="Detalhes adicionais do cenário (opcional)"
+                                        placeholderTextColor="#9CA3AF"
+                                        multiline numberOfLines={3}
+                                        style={{ borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 10, padding: 12, fontSize: 14, color: '#1F2937', minHeight: 80, textAlignVertical: 'top' }}
+                                    />
+                                </View>
+
+                                <TouchableOpacity
+                                    onPress={async () => {
+                                        if (!iaScenarioInput.trim()) return;
+                                        setIaLoading(true);
+                                        try {
+                                            const cities = getProjectionBaseData().map(c => ({ name: c.name, votes: c.votes }));
+                                            const result = await simulateScenario({
+                                                candidateName: 'ADELMO SOARES',
+                                                party: 'PSB',
+                                                currentVotes: 34365,
+                                                scenario: iaScenarioInput,
+                                                scenarioDetails: iaScenarioDetails || iaScenarioInput,
+                                                topCities: cities,
+                                            });
+                                            setIaSimulation(result);
+                                        } catch (e: any) { console.error(e); }
+                                        setIaLoading(false);
+                                    }}
+                                    disabled={iaLoading || !iaScenarioInput.trim()}
+                                    style={{
+                                        backgroundColor: '#10B981', borderRadius: 12, padding: 16,
+                                        alignItems: 'center', opacity: (iaLoading || !iaScenarioInput.trim()) ? 0.6 : 1, marginBottom: 16,
+                                    }}
+                                >
+                                    {iaLoading ? (
+                                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                                            <ActivityIndicator color="#FFF" size="small" />
+                                            <Text style={{ fontSize: 15, fontWeight: '700', color: '#FFF' }}>Simulando cenário...</Text>
+                                        </View>
+                                    ) : (
+                                        <Text style={{ fontSize: 15, fontWeight: '700', color: '#FFF' }}>🎯 Simular Cenário</Text>
+                                    )}
+                                </TouchableOpacity>
+
+                                {iaSimulation && (
+                                    <View>
+                                        <View style={{ flexDirection: 'row', gap: 10, marginBottom: 12 }}>
+                                            <View style={{ flex: 1, backgroundColor: '#FFF', borderRadius: 12, padding: 14, borderLeftWidth: 4, borderLeftColor: '#10B981' }}>
+                                                <Text style={{ fontSize: 11, color: '#6B7280' }}>Votos Projetados</Text>
+                                                <Text style={{ fontSize: 22, fontWeight: '800', color: '#10B981' }}>{new Intl.NumberFormat('pt-BR').format(iaSimulation.projectedVotes)}</Text>
+                                            </View>
+                                            <View style={{ flex: 1, backgroundColor: '#FFF', borderRadius: 12, padding: 14, borderLeftWidth: 4, borderLeftColor: '#8B5CF6' }}>
+                                                <Text style={{ fontSize: 11, color: '#6B7280' }}>Confiança</Text>
+                                                <Text style={{ fontSize: 22, fontWeight: '800', color: '#8B5CF6' }}>{iaSimulation.confidenceLevel}</Text>
+                                            </View>
+                                        </View>
+                                        <View style={{ backgroundColor: '#FFF', borderRadius: 12, padding: 16, marginBottom: 12, borderLeftWidth: 4, borderLeftColor: '#10B981' }}>
+                                            <Text style={{ fontSize: 15, fontWeight: '700', color: '#1F2937', marginBottom: 8 }}>Análise do Cenário</Text>
+                                            <Text style={{ fontSize: 13, color: '#4B5563', lineHeight: 20 }}>{iaSimulation.analysis}</Text>
+                                        </View>
+                                        {iaSimulation.strategies?.length > 0 && (
+                                            <View style={{ backgroundColor: '#F0FDF4', borderRadius: 12, padding: 14, borderLeftWidth: 4, borderLeftColor: '#10B981' }}>
+                                                <Text style={{ fontSize: 14, fontWeight: '700', color: '#166534', marginBottom: 8 }}>📋 Estratégias Sugeridas</Text>
+                                                {iaSimulation.strategies.map((s, i) => (
+                                                    <Text key={i} style={{ fontSize: 12, color: '#166534', marginBottom: 4, lineHeight: 18 }}>• {s}</Text>
+                                                ))}
+                                            </View>
+                                        )}
+                                    </View>
+                                )}
+                            </View>
+                        )}
+
+                        {/* IA Chat Section */}
+                        {iaActiveSection === 'chat' && (
+                            <View style={{ backgroundColor: '#FFF', borderRadius: 12, padding: 16 }}>
+                                <Text style={{ fontSize: 14, fontWeight: '700', color: '#1F2937', marginBottom: 12 }}>💬 Pergunte ao Assistente Eleitoral</Text>
+                                <View style={{ marginBottom: 12, maxHeight: 300 }}>
+                                    <ScrollView>
+                                        {chatMessages.map((msg, i) => (
+                                            <View key={i} style={{ marginBottom: 10, alignItems: msg.role === 'user' ? 'flex-end' : 'flex-start' }}>
+                                                <View style={{
+                                                    maxWidth: '85%', backgroundColor: msg.role === 'user' ? '#8B5CF6' : '#F3F4F6',
+                                                    borderRadius: 14, padding: 12,
+                                                }}>
+                                                    <Text style={{ fontSize: 13, color: msg.role === 'user' ? '#FFF' : '#1F2937', lineHeight: 19 }}>{msg.content}</Text>
+                                                </View>
+                                            </View>
+                                        ))}
+                                        {chatLoading && (
+                                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, padding: 10 }}>
+                                                <ActivityIndicator size="small" color="#8B5CF6" />
+                                                <Text style={{ fontSize: 13, color: '#6B7280' }}>Pensando...</Text>
+                                            </View>
+                                        )}
+                                    </ScrollView>
+                                </View>
+                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                                    <TextInput
+                                        value={chatInput}
+                                        onChangeText={setChatInput}
+                                        placeholder="Ex: Quais estratégias para recuperar votos em Caxias?"
+                                        placeholderTextColor="#9CA3AF"
+                                        style={{ flex: 1, borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 22, paddingHorizontal: 14, paddingVertical: 10, fontSize: 14, color: '#1F2937' }}
+                                        onSubmitEditing={() => {
+                                            if (!chatInput.trim() || chatLoading) return;
+                                            const msg = chatInput.trim();
+                                            setChatInput('');
+                                            setChatMessages(prev => [...prev, { role: 'user', content: msg }]);
+                                            setChatLoading(true);
+                                            sendChatMessage(msg, {
+                                                name: 'ADELMO SOARES', party: 'PSB', number: '40000',
+                                                totalVotes: 34365, ranking: 9, topCities: [{ city: 'CAXIAS', votes: 8542 }],
+                                            }, chatMessages).then(response => {
+                                                setChatMessages(prev => [...prev, { role: 'assistant', content: response }]);
+                                            }).catch(e => {
+                                                setChatMessages(prev => [...prev, { role: 'assistant', content: 'Erro ao consultar IA. Tente novamente.' }]);
+                                            }).finally(() => setChatLoading(false));
+                                        }}
+                                    />
+                                    <TouchableOpacity
+                                        onPress={() => {
+                                            if (!chatInput.trim() || chatLoading) return;
+                                            const msg = chatInput.trim();
+                                            setChatInput('');
+                                            setChatMessages(prev => [...prev, { role: 'user', content: msg }]);
+                                            setChatLoading(true);
+                                            sendChatMessage(msg, {
+                                                name: 'ADELMO SOARES', party: 'PSB', number: '40000',
+                                                totalVotes: 34365, ranking: 9, topCities: [{ city: 'CAXIAS', votes: 8542 }],
+                                            }, chatMessages).then(response => {
+                                                setChatMessages(prev => [...prev, { role: 'assistant', content: response }]);
+                                            }).catch(e => {
+                                                setChatMessages(prev => [...prev, { role: 'assistant', content: 'Erro ao consultar IA.' }]);
+                                            }).finally(() => setChatLoading(false));
+                                        }}
+                                        disabled={chatLoading || !chatInput.trim()}
+                                        style={{
+                                            width: 42, height: 42, borderRadius: 21,
+                                            backgroundColor: chatInput.trim() ? '#8B5CF6' : '#E5E7EB',
+                                            justifyContent: 'center', alignItems: 'center',
+                                        }}
+                                    >
+                                        <Send color={chatInput.trim() ? '#fff' : '#9CA3AF'} size={18} />
+                                    </TouchableOpacity>
+                                </View>
+                            </View>
+                        )}
+                    </View>
+                )}
+
             </ScrollView>
 
             {/* Floating Chat FAB */}
