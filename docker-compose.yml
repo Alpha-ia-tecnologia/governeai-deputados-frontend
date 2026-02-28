@@ -1,0 +1,18 @@
+services:
+  app:
+    build: .
+    image: governe-ai-frontend
+
+networks:
+  default:
+    external: true
+    name: easypanel
+
+  governeai-frontend-network:
+    name: governeai-frontend-network 
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.200.90.0/24
+  easypanel:
+    external: true

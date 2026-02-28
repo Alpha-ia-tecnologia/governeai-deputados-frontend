@@ -1,0 +1,61 @@
+{
+  "expo": {
+    "name": "Sistema Vereadores Parnaíba",
+    "slug": "sistema-vereadores-parnaiba",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "rork-app",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/images/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#1a2744"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "app.rork.sistema-vereadores-parnaiba"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "package": "app.rork.sistema_vereadores_parnaiba",
+      "permissions": [
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        "android.permission.SCHEDULE_EXACT_ALARM",
+        "android.permission.VIBRATE"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/images/favicon.png",
+      "bundler": "metro"
+    },
+    "updates": {
+      "fallbackToCacheTimeout": 0,
+      "enabled": true
+    },
+    "plugins": [
+      [
+        "expo-router",
+        {
+          "origin": "https://rork.com/"
+        }
+      ],
+      "expo-font",
+      "expo-web-browser",
+      [
+        "expo-notifications",
+        {
+          "color": "#ffffff",
+          "defaultChannel": "default"
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}

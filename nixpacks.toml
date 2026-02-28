@@ -1,0 +1,13 @@
+# Force Node.js 22 for compatibility with metro-core
+# npm comes bundled with nodejs, no need for yarn
+[phases.setup]
+nixPkgs = ["nodejs_22"]
+
+[phases.install]
+cmds = ["npm ci --legacy-peer-deps"]
+
+[phases.build]
+cmds = ["npx expo export --platform web"]
+
+[start]
+cmd = "npx serve dist -s -l ${PORT:-3000}"
