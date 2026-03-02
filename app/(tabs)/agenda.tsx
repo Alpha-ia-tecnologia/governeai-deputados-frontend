@@ -189,6 +189,7 @@ export default function AgendaScreen() {
       voterName: voter?.name,
       responsibleId: user?.id || "1",
       responsibleName: user?.name || "Admin",
+      vereadorId: user?.vereadorId || undefined,
       notes: formData.notes,
       reminders,
     };
