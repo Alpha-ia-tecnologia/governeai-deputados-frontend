@@ -238,16 +238,28 @@ export default function ElectionAnalysisScreen() {
 
     useEffect(() => {
         // Auto-carregar insights de Adelmo e dados por cidade quando Deputado Estadual é selecionado
+        // Também re-carrega quando o ano da eleição muda
         if (isDeputadoPosition(selectedPosition)) {
             setAdelmoInsights(getAdelmoSoaresCompleteInsights());
-            setCityData(getMockDeputadoCityData());
+            const newCityData = getMockDeputadoCityData();
+            setCityData(newCityData);
+            // Re-buscar detalhes da cidade selecionada com dados do novo ano
+            if (selectedCity) {
+                const stillExists = newCityData.some((c: any) => c.city === selectedCity);
+                if (stillExists) {
+                    setCityDetails(getMockDeputadoCityDetails(selectedCity));
+                } else {
+                    setSelectedCity(null);
+                    setCityDetails(null);
+                }
+            }
         } else {
             setAdelmoInsights(null);
             setCityData([]);
             setSelectedCity(null);
             setCityDetails(null);
         }
-    }, [selectedPosition]);
+    }, [selectedPosition, selectedElectionYear]);
 
     useEffect(() => {
         if (activeTab === 'secoes') {
@@ -2611,7 +2623,7 @@ export default function ElectionAnalysisScreen() {
                                             const result = await analyzeElection({
                                                 candidateName: 'ADELMO SOARES',
                                                 party: selectedElectionYear === 2018 ? 'PCdoB' : 'PSB',
-                                                totalVotes: selectedElectionYear === 2018 ? 43974 : 34365,
+                                                totalVotes: selectedElectionYear === 2018 ? 43974 : 34348,
                                                 year: selectedElectionYear,
                                                 competitors,
                                             });
@@ -2680,7 +2692,7 @@ export default function ElectionAnalysisScreen() {
                                             const result = await compareElections({
                                                 candidateName: 'ADELMO SOARES',
                                                 election2018: { party: 'PCdoB', votes: 43974, result: 'ELEITO', municipalities: 209 },
-                                                election2022: { party: 'PSB', votes: 34365, result: '2º SUPLENTE', municipalities: 195 },
+                                                election2022: { party: 'PSB', votes: 34348, result: '2º SUPLENTE', municipalities: 195 },
                                             });
                                             setIaComparison(result);
                                         } catch (e: any) { console.error(e); }
@@ -2772,7 +2784,7 @@ export default function ElectionAnalysisScreen() {
                                             const result = await simulateScenario({
                                                 candidate: 'ADELMO SOARES',
                                                 party: 'PSB',
-                                                currentVotes: 34365,
+                                                currentVotes: 34348,
                                                 scenario: iaScenarioInput,
                                                 scenarioDetails: iaScenarioDetails || iaScenarioInput,
                                                 topCities: cities,
@@ -2865,7 +2877,7 @@ export default function ElectionAnalysisScreen() {
                                             setChatLoading(true);
                                             sendChatMessage(msg, {
                                                 name: 'ADELMO SOARES', party: 'PSB', number: '40000',
-                                                totalVotes: 34365, ranking: 9, topCities: [{ city: 'CAXIAS', votes: 8542 }],
+                                                totalVotes: 34348, ranking: 37, topCities: [{ city: 'CAXIAS', votes: 8978 }],
                                             }, chatMessages).then(response => {
                                                 setChatMessages(prev => [...prev, { role: 'assistant', content: response }]);
                                             }).catch(e => {
@@ -2882,7 +2894,7 @@ export default function ElectionAnalysisScreen() {
                                             setChatLoading(true);
                                             sendChatMessage(msg, {
                                                 name: 'ADELMO SOARES', party: 'PSB', number: '40000',
-                                                totalVotes: 34365, ranking: 9, topCities: [{ city: 'CAXIAS', votes: 8542 }],
+                                                totalVotes: 34348, ranking: 37, topCities: [{ city: 'CAXIAS', votes: 8978 }],
                                             }, chatMessages).then(response => {
                                                 setChatMessages(prev => [...prev, { role: 'assistant', content: response }]);
                                             }).catch(e => {

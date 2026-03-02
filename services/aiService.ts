@@ -129,7 +129,7 @@ export async function sendChatMessage(
                 state: 'MA',
                 electionHistory: [
                     { year: 2018, votes: 43974, result: 'ELEITO' },
-                    { year: 2022, votes: 34365, result: '2º SUPLENTE' },
+                    { year: 2022, votes: 34348, result: '2º SUPLENTE' },
                 ],
             },
         });
