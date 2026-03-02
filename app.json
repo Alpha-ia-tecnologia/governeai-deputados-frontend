@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "Sistema Vereadores Parnaíba",
-    "slug": "sistema-vereadores-parnaiba",
+    "name": "Governe AI Deputados",
+    "slug": "governe-ai-deputados",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",

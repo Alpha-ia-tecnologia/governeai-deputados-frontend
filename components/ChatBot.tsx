@@ -28,7 +28,7 @@ export function ChatBot() {
       id: "1",
       role: "assistant",
       content:
-        "Olá! Sou o assistente virtual do Sistema de Gestão para Vereadores de Parnaíba. Como posso ajudá-lo hoje?",
+        "Olá! Sou o assistente virtual do Governe AI Deputados. Como posso ajudá-lo hoje?",
     },
   ]);
   const [input, setInput] = useState("");
@@ -38,7 +38,7 @@ export function ChatBot() {
   const { voters, leaders, helpRecords, visits } = useData();
 
   const getSystemContext = () => {
-    return `Você é um assistente virtual do Sistema de Gestão para Vereadores de Parnaíba. 
+    return `Você é um assistente virtual do Governe AI Deputados. 
     
 Informações do sistema:
 - Usuário atual: ${user?.name || "Não autenticado"} (${user?.role || "N/A"})
