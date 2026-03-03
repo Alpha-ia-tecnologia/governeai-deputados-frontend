@@ -409,7 +409,13 @@ export default function ManageTasksScreen() {
             {/* ══ Kanban View ══ */}
             {viewMode === "kanban" && (
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} style={k.boardScroll} contentContainerStyle={k.boardContent}>
-                    {STATUS_ORDER.map(renderKanbanColumn)}
+                    {STATUS_ORDER.flatMap((s, i) => {
+                        const col = renderKanbanColumn(s);
+                        if (i < STATUS_ORDER.length - 1) {
+                            return [col, <View key={`sep-${i}`} style={{ width: 1, backgroundColor: colors.border + '80', marginVertical: 8, alignSelf: 'stretch' }} />];
+                        }
+                        return [col];
+                    })}
                 </ScrollView>
             )}
 
