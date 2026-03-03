@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+﻿import React, { useState } from "react";
 import {
   View,
   Text,
@@ -64,7 +64,7 @@ export default function AddHelpScreen() {
   };
 
   const handleSubmit = async () => {
-    // Buscar o eleitor para pegar a liderança associada
+    // Buscar o eleitor para pegar a Articulador Político associada
     const voter = voters.find((v) => v.id === voterId);
 
     if (!voter) {
@@ -73,7 +73,7 @@ export default function AddHelpScreen() {
     }
 
     if (!voter.leaderId) {
-      showToast({ type: 'error', title: 'Erro', message: 'Este eleitor não possui uma liderança associada.' });
+      showToast({ type: 'error', title: 'Erro', message: 'Este eleitor não possui uma Articulador Político associada.' });
       return;
     }
 
@@ -85,7 +85,7 @@ export default function AddHelpScreen() {
     setIsSubmitting(true);
 
     try {
-      // Buscar a liderança para obter o vereadorId
+      // Buscar a Articulador Político para obter o vereadorId
       const leader = leaders.find((l) => l.id === voter.leaderId);
       const vereadorId = voter.vereadorId || leader?.vereadorId;
 
@@ -106,7 +106,7 @@ export default function AddHelpScreen() {
         responsibleId: user?.id || "",
         responsibleName: user?.name || "",
         notes: notes.trim() || undefined,
-        vereadorId: vereadorId, // Herda o vereadorId do eleitor ou da liderança
+        vereadorId: vereadorId, // Herda o vereadorId do eleitor ou da Articulador Político
       });
 
       showToast({ type: 'success', title: 'Sucesso', message: 'Ajuda registrada com sucesso!' });
@@ -147,7 +147,7 @@ export default function AddHelpScreen() {
           </View>
 
           <View style={styles.infoCard}>
-            <Text style={styles.infoLabel}>Liderança Responsável:</Text>
+            <Text style={styles.infoLabel}>Articulador Político Responsável:</Text>
             <Text style={styles.infoValue}>
               {(() => {
                 const voter = voters.find((v) => v.id === voterId);

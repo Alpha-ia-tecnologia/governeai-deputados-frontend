@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+﻿import React, { useState } from "react";
 import {
   View,
   Text,
@@ -40,9 +40,9 @@ const faqs: FAQItem[] = [
       "Na tela de detalhes do eleitor, você encontrará botões para 'Adicionar Visita' e 'Adicionar Ajuda'. Clique no botão desejado, preencha os detalhes e confirme o registro.",
   },
   {
-    question: "Como gerenciar lideranças?",
+    question: "Como gerenciar Articuladores Políticos?",
     answer:
-      "Acesse 'Configurações' > 'Meu Perfil' > 'Gerenciar Lideranças'. Lá você pode adicionar novas lideranças, editar informações ou remover lideranças existentes.",
+      "Acesse 'Configurações' > 'Meu Perfil' > 'Gerenciar Articuladores Políticos'. Lá você pode adicionar novas Articuladores Políticos, editar informações ou remover Articuladores Políticos existentes.",
   },
   {
     question: "Como criar um projeto de lei?",

@@ -1,4 +1,4 @@
-import createContextHook from "@nkzw/create-context-hook";
+﻿import createContextHook from "@nkzw/create-context-hook";
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { Voter, Leader, HelpRecord, Visit, Appointment, LawProject, Amendment, City, ExecutiveRequest, StaffMember, GabineteTask, LegislativeBill, VotingRecord, PoliticalContact, CeapExpense } from "@/types";
 import {
@@ -137,7 +137,7 @@ export const [DataProvider, useData] = createContextHook(() => {
     try {
       const newVoter = await votersService.create(voter);
       setVoters((prev) => [...prev, newVoter]);
-      // Atualizar lista de lideranças para refletir novo contador
+      // Atualizar lista de Articuladores Políticos para refletir novo contador
       const updatedLeaders = await leadersService.getAll();
       setLeaders(updatedLeaders);
     } catch (error: any) {
@@ -168,7 +168,7 @@ export const [DataProvider, useData] = createContextHook(() => {
     try {
       await votersService.delete(id);
       setVoters((prev) => prev.filter((v) => v.id !== id));
-      // Atualizar lista de lideranças para refletir novo contador
+      // Atualizar lista de Articuladores Políticos para refletir novo contador
       const updatedLeaders = await leadersService.getAll();
       setLeaders(updatedLeaders);
     } catch (error: any) {
@@ -184,7 +184,7 @@ export const [DataProvider, useData] = createContextHook(() => {
       setLeaders((prev) => [...prev, newLeader]);
     } catch (error: any) {
       console.error("Error adding leader:", error);
-      throw new Error(error.message || "Erro ao adicionar liderança");
+      throw new Error(error.message || "Erro ao adicionar Articulador Político");
     }
   }, []);
 
@@ -196,7 +196,7 @@ export const [DataProvider, useData] = createContextHook(() => {
       );
     } catch (error: any) {
       console.error("Error updating leader:", error);
-      throw new Error(error.message || "Erro ao atualizar liderança");
+      throw new Error(error.message || "Erro ao atualizar Articulador Político");
     }
   }, []);
 
@@ -206,7 +206,7 @@ export const [DataProvider, useData] = createContextHook(() => {
       setLeaders((prev) => prev.filter((l) => l.id !== id));
     } catch (error: any) {
       console.error("Error deleting leader:", error);
-      throw new Error(error.message || "Erro ao deletar liderança");
+      throw new Error(error.message || "Erro ao deletar Articulador Político");
     }
   }, []);
 

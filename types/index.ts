@@ -104,7 +104,7 @@ export interface Leader {
   votersCount: number;
   votersGoal: number;
   active: boolean;
-  userId?: string; // Referência ao usuário do sistema (quando a liderança também é um usuário)
+  userId?: string; // Referência ao usuário do sistema (quando a articulador político também é um usuário)
   createdAt: string;
   vereadorId?: string;
 }

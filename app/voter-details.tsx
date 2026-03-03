@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+﻿import React, { useMemo, useState } from "react";
 import {
   View,
   Text,
@@ -425,7 +425,7 @@ export default function VoterDetailsScreen() {
 
           <View style={styles.infoRow}>
             <UserCheck color={Colors.light.textSecondary} size={20} />
-            <Text style={styles.infoLabel}>Liderança</Text>
+            <Text style={styles.infoLabel}>Articulador Político</Text>
             <Text style={styles.infoValue}>{voter.leaderName}</Text>
           </View>
 

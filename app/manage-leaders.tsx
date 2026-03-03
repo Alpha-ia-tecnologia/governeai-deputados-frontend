@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+﻿import React, { useState } from "react";
 import {
   View,
   Text,
@@ -125,7 +125,7 @@ export default function ManageLeadersScreen() {
       setIsEditModalVisible(false);
       showConfirmDialog({
         title: "Sucesso",
-        description: "Liderança atualizada com sucesso!",
+        description: "Articulador Político atualizada com sucesso!",
         variant: "success",
         confirmText: "OK",
         showCancel: false,
@@ -134,7 +134,7 @@ export default function ManageLeadersScreen() {
       console.error("Error updating leader:", error);
       showConfirmDialog({
         title: "Erro",
-        description: "Não foi possível atualizar a liderança",
+        description: "Não foi possível atualizar a Articulador Político",
         variant: "danger",
         confirmText: "OK",
         showCancel: false,
@@ -148,7 +148,7 @@ export default function ManageLeadersScreen() {
   };
 
   const handleToggleActive = (leader: Leader) => {
-    const title = leader.active ? "Desativar Liderança" : "Ativar Liderança";
+    const title = leader.active ? "Desativar Articulador Político" : "Ativar Articulador Político";
     const message = `Tem certeza que deseja ${leader.active ? "desativar" : "ativar"} ${leader.name}?`;
 
     showConfirmDialog({
@@ -162,7 +162,7 @@ export default function ManageLeadersScreen() {
           await updateLeader(leader.id, { active: !leader.active });
           showConfirmDialog({
             title: "Sucesso",
-            description: `Liderança ${leader.active ? "desativada" : "ativada"} com sucesso!`,
+            description: `Articulador Político ${leader.active ? "desativada" : "ativada"} com sucesso!`,
             variant: "success",
             confirmText: "OK",
             showCancel: false,
@@ -171,7 +171,7 @@ export default function ManageLeadersScreen() {
           console.error("Error toggling leader:", error);
           showConfirmDialog({
             title: "Erro",
-            description: "Não foi possível alterar o status da liderança",
+            description: "Não foi possível alterar o status da Articulador Político",
             variant: "danger",
             confirmText: "OK",
             showCancel: false,
@@ -183,7 +183,7 @@ export default function ManageLeadersScreen() {
 
   const handleDelete = (leader: Leader) => {
     showConfirmDialog({
-      title: "Excluir Liderança",
+      title: "Excluir Articulador Político",
       description: `Tem certeza que deseja excluir ${leader.name}? Esta ação não pode ser desfeita.`,
       variant: "danger",
       confirmText: "Excluir",
@@ -193,7 +193,7 @@ export default function ManageLeadersScreen() {
           await deleteLeader(leader.id);
           showConfirmDialog({
             title: "Sucesso",
-            description: "Liderança excluída com sucesso!",
+            description: "Articulador Político excluída com sucesso!",
             variant: "success",
             confirmText: "OK",
             showCancel: false,
@@ -202,7 +202,7 @@ export default function ManageLeadersScreen() {
           console.error("Error deleting leader:", error);
           showConfirmDialog({
             title: "Erro",
-            description: "Não foi possível excluir a liderança",
+            description: "Não foi possível excluir a Articulador Político",
             variant: "danger",
             confirmText: "OK",
             showCancel: false,
@@ -351,7 +351,7 @@ export default function ManageLeadersScreen() {
     <>
       <Stack.Screen
         options={{
-          title: "Gerenciar Lideranças",
+          title: "Gerenciar Articuladores Políticos",
           headerStyle: {
             backgroundColor: Colors.light.primary,
           },
@@ -378,7 +378,7 @@ export default function ManageLeadersScreen() {
       <View style={styles.container}>
         <View style={styles.header}>
           <SearchBar
-            placeholder="Buscar liderança..."
+            placeholder="Buscar Articulador Político..."
             value={search}
             onChangeText={setSearch}
             containerStyle={styles.searchBar}
@@ -472,7 +472,7 @@ export default function ManageLeadersScreen() {
           <View style={styles.summaryCard}>
             <Users color={Colors.light.primary} size={20} />
             <Text style={styles.summaryValue}>{leaders.length}</Text>
-            <Text style={styles.summaryLabel}>Lideranças</Text>
+            <Text style={styles.summaryLabel}>Articuladores Políticos</Text>
           </View>
           <View style={styles.summaryCard}>
             <Target color={Colors.light.success} size={20} />
@@ -489,14 +489,14 @@ export default function ManageLeadersScreen() {
         {filteredAndSortedLeaders.length === 0 ? (
           <EmptyState
             icon={<Users color={Colors.light.textSecondary} size={64} />}
-            title="Nenhuma liderança encontrada"
+            title="Nenhuma Articulador Político encontrada"
             description={
               search
                 ? "Tente ajustar os filtros ou busca"
-                : "Comece adicionando a primeira liderança"
+                : "Comece adicionando a primeira Articulador Político"
             }
             action={{
-              label: "Adicionar Liderança",
+              label: "Adicionar Articulador Político",
               onPress: () => router.push("/add-leader"),
             }}
           />
@@ -519,7 +519,7 @@ export default function ManageLeadersScreen() {
           <View style={styles.modalOverlay}>
             <View style={styles.modalContent}>
               <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>Editar Liderança</Text>
+                <Text style={styles.modalTitle}>Editar Articulador Político</Text>
                 <TouchableOpacity onPress={() => setIsEditModalVisible(false)}>
                   <X color={Colors.light.text} size={24} />
                 </TouchableOpacity>
@@ -625,7 +625,7 @@ export default function ManageLeadersScreen() {
               {selectedLeader && (
                 <>
                   <View style={styles.modalHeader}>
-                    <Text style={styles.modalTitle}>Detalhes da Liderança</Text>
+                    <Text style={styles.modalTitle}>Detalhes da Articulador Político</Text>
                     <TouchableOpacity onPress={() => setIsDetailModalVisible(false)}>
                       <X color={Colors.light.text} size={24} />
                     </TouchableOpacity>
@@ -748,7 +748,7 @@ export default function ManageLeadersScreen() {
                         <View style={styles.noVotersContainer}>
                           <Users color={Colors.light.textSecondary} size={32} />
                           <Text style={styles.noVotersText}>
-                            Nenhum eleitor vinculado a esta liderança
+                            Nenhum eleitor vinculado a esta Articulador Político
                           </Text>
                         </View>
                       ) : (
@@ -805,7 +805,7 @@ export default function ManageLeadersScreen() {
                       }}
                     >
                       <Edit2 color="#fff" size={18} />
-                      <Text style={styles.modalButtonTextPrimary}>Editar Liderança</Text>
+                      <Text style={styles.modalButtonTextPrimary}>Editar Articulador Político</Text>
                     </TouchableOpacity>
                   </View>
                 </>
@@ -842,7 +842,7 @@ export default function ManageLeadersScreen() {
                       <View style={styles.detailHeaderInfo}>
                         <Text style={styles.detailName}>{selectedVoter.name}</Text>
                         <Text style={styles.voterSubtitle}>
-                          Liderança: {selectedVoter.leaderName || "Não vinculado"}
+                          Articulador Político: {selectedVoter.leaderName || "Não vinculado"}
                         </Text>
                       </View>
                     </View>

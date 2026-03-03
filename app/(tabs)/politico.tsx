@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+﻿import React, { useMemo } from "react";
 import {
     View,
     Text,
@@ -170,7 +170,7 @@ export default function PoliticoScreen() {
                         <View style={{ flex: 1 }}>
                             <Text style={[styles.moduleTitle, { color: colors.text }]}>Base Eleitoral</Text>
                             <Text style={[styles.moduleSubtitle, { color: colors.textSecondary }]}>
-                                Eleitores e lideranças
+                                Eleitores e Articuladores Políticos
                             </Text>
                         </View>
                     </View>
@@ -184,7 +184,7 @@ export default function PoliticoScreen() {
                         <View style={styles.baseStat}>
                             <UserCheck color={colors.accent} size={18} />
                             <Text style={[styles.baseStatValue, { color: colors.text }]}>{stats.totalLeaders}</Text>
-                            <Text style={[styles.baseStatLabel, { color: colors.textSecondary }]}>Lideranças</Text>
+                            <Text style={[styles.baseStatLabel, { color: colors.textSecondary }]}>Articuladores Políticos</Text>
                         </View>
                     </View>
                 </View>

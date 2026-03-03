@@ -1,0 +1,11 @@
+{
+  "status": "init",
+  "executionArgs": {
+    "projectName": "governe-ai-frontend",
+    "projectPath": "c:\\Users\\RonaldoPimentel\\Documents\\governeai-deputados\\governe-ai-frontend",
+    "testIds": [],
+    "additionalInstruction": "The standardized PRD and code summary YAML files are already generated at testsprite_tests/tmp/standardized_prd.yaml and testsprite_tests/tmp/code_summary.yaml. The frontend is running on http://localhost:8081 and the backend is running on http://localhost:3750. The app requires login with email and password.",
+    "serverMode": "development",
+    "envs": {}
+  }
+}

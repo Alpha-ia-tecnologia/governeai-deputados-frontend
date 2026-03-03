@@ -3,16 +3,16 @@ import { Leader } from '../types';
 
 export const leadersService = {
   /**
-   * Listar todas as lideranças
+   * Listar todas as articuladores políticos
    */
   async getAll(): Promise<Leader[]> {
     try {
-      console.log('LeadersService: Buscando lideranças e usuários...');
+      console.log('LeadersService: Buscando articuladores políticos e usuários...');
 
-      // Buscar lideranças e usuários em paralelo
+      // Buscar articuladores políticos e usuários em paralelo
       const [leadersResponse, usersResponse] = await Promise.all([
         api.get<Leader[]>('/leaders').catch(err => {
-          console.error('LeadersService: Erro ao buscar lideranças:', err);
+          console.error('LeadersService: Erro ao buscar articuladores políticos:', err);
           return { data: [] as Leader[] };
         }),
         api.get<any[]>('/users').catch(err => {
@@ -35,12 +35,12 @@ export const leadersService = {
         console.warn('LeadersService: Resposta de usuários não é um array:', usersResponse.data);
       }
 
-      console.log(`LeadersService: Encontrados ${leaders.length} lideranças e ${users.length} usuários`);
+      console.log(`LeadersService: Encontrados ${leaders.length} articuladores políticos e ${users.length} usuários`);
 
       // Filtrar usuários com role 'lideranca'
       const leadershipUsers = users.filter(u => u.role === 'lideranca' && u.active);
 
-      // Identificar usuários que já têm registro de liderança (pelo ID do usuário ou email)
+      // Identificar usuários que já têm registro de articulador político (pelo ID do usuário ou email)
       const existingLeaderUserIds = new Set(leaders.map(l => l.userId).filter(Boolean));
       const existingLeaderEmails = new Set(leaders.map(l => l.email).filter(Boolean));
 
@@ -62,7 +62,7 @@ export const leadersService = {
           vereadorId: u.vereadorId
         }));
 
-      // Enriquecer lideranças existentes com vereadorId dos usuários correspondentes
+      // Enriquecer articuladores políticos existentes com vereadorId dos usuários correspondentes
       const enrichedLeaders = leaders.map(leader => {
         if (leader.vereadorId) return leader; // Já tem vereadorId
 
@@ -74,18 +74,18 @@ export const leadersService = {
         return leader;
       });
 
-      console.log(`LeadersService: Adicionando ${orphanUsersAsLeaders.length} usuários de liderança sem registro específico`);
+      console.log(`LeadersService: Adicionando ${orphanUsersAsLeaders.length} usuários de articulador político sem registro específico`);
 
       // Combinar listas
       return [...enrichedLeaders, ...orphanUsersAsLeaders];
     } catch (error: any) {
-      console.error('LeadersService: Erro geral ao buscar lideranças:', error);
+      console.error('LeadersService: Erro geral ao buscar articuladores políticos:', error);
       return [];
     }
   },
 
   /**
-   * Buscar liderança por ID
+   * Buscar articulador político por ID
    */
   async getById(id: string): Promise<Leader> {
     const response = await api.get<Leader>(`/leaders/${id}`);
@@ -93,7 +93,7 @@ export const leadersService = {
   },
 
   /**
-   * Criar nova liderança
+   * Criar nova articulador político
    */
   async create(data: Omit<Leader, 'id' | 'createdAt' | 'votersCount'>): Promise<Leader> {
     console.log('LeadersService.create: Sending data =', data);
@@ -109,7 +109,7 @@ export const leadersService = {
   },
 
   /**
-   * Atualizar liderança
+   * Atualizar articulador político
    */
   async update(id: string, data: Partial<Leader>): Promise<Leader> {
     const response = await api.patch<Leader>(`/leaders/${id}`, data);
@@ -117,14 +117,14 @@ export const leadersService = {
   },
 
   /**
-   * Deletar liderança
+   * Deletar articulador político
    */
   async delete(id: string): Promise<void> {
     await api.delete(`/leaders/${id}`);
   },
 
   /**
-   * Cria um registro de Leader a partir de um usuário com role liderança
+   * Cria um registro de Leader a partir de um usuário com role articulador político
    * Usado quando o usuário existe mas não tem registro correspondente na tabela leaders
    */
   async createFromUser(userId: string, userData: { name: string; cpf?: string; phone: string; email?: string; region?: string }): Promise<Leader> {

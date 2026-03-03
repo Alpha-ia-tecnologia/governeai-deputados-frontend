@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+﻿import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   View,
   Text,
@@ -189,7 +189,7 @@ export default function AdicionarUsuarioScreen() {
     },
     {
       value: "lideranca",
-      label: "Liderança",
+      label: "Articulador Político",
       description: "Gestão de eleitores da região",
     },
   ];
@@ -200,7 +200,7 @@ export default function AdicionarUsuarioScreen() {
       // Admin pode criar qualquer tipo
       return true;
     } else if (currentUser?.role === "vereador" || currentUser?.role === "assessor") {
-      // Vereador e Assessor só podem criar assessor e liderança
+      // Vereador e Assessor só podem criar assessor e Articulador Político
       return role.value === "assessor" || role.value === "lideranca";
     }
     return false;
@@ -402,7 +402,7 @@ export default function AdicionarUsuarioScreen() {
 
       const newUser = await usersService.create(userData);
 
-      // Se o usuário for uma liderança, criar também o registro de liderança
+      // Se o usuário for uma Articulador Político, criar também o registro de Articulador Político
       if (formData.role === "lideranca") {
         try {
           await leadersService.create({
@@ -415,10 +415,10 @@ export default function AdicionarUsuarioScreen() {
             active: true,
             userId: newUser.id, // Vincular ao usuário criado
           });
-          console.log("Registro de liderança criado automaticamente para o usuário:", newUser.id);
+          console.log("Registro de Articulador Político criado automaticamente para o usuário:", newUser.id);
         } catch (leaderError) {
-          console.error("Erro ao criar registro de liderança automático:", leaderError);
-          // Não falhar o cadastro do usuário se falhar a criação da liderança,
+          console.error("Erro ao criar registro de Articulador Político automático:", leaderError);
+          // Não falhar o cadastro do usuário se falhar a criação da Articulador Político,
           // pois o fix no leaders.service.ts já trata a exibição.
           // Apenas logar o erro.
         }
@@ -633,7 +633,7 @@ export default function AdicionarUsuarioScreen() {
               )}
             </View>
 
-            {/* Seletor de Vereador para assessor e liderança */}
+            {/* Seletor de Vereador para assessor e Articulador Político */}
             {needsVereadorSelection && (
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>Vereador Responsável *</Text>

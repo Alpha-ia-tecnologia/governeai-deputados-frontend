@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from 'react';
+﻿import React, { useRef, useEffect, useState } from 'react';
 import {
     View,
     Text,
@@ -303,7 +303,7 @@ const LeaderDetailSheet: React.FC<{
                     ]}
                 >
                     <View style={styles.sheetHeader}>
-                        <Text style={[styles.sheetTitle, { color: colors.text }]}>Detalhes da Liderança</Text>
+                        <Text style={[styles.sheetTitle, { color: colors.text }]}>Detalhes da Articulador Político</Text>
                         <TouchableOpacity onPress={onClose}>
                             <X size={24} color={colors.textSecondary} />
                         </TouchableOpacity>
@@ -361,7 +361,7 @@ const LeaderDetailSheet: React.FC<{
  */
 export const EnhancedLeaderTable: React.FC<EnhancedLeaderTableProps> = ({
     leaders,
-    title = 'Desempenho das Lideranças',
+    title = 'Desempenho das Articuladores Políticos',
     onLeaderPress,
     maxVisible = 5,
 }) => {

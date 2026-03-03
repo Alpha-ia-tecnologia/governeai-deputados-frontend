@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from "react";
+﻿import React, { useState, useCallback, useEffect } from "react";
 import {
   View,
   Text,
@@ -202,7 +202,7 @@ export default function GerenciamentoUsuariosScreen() {
       case "vereador":
         return "Vereador";
       case "lideranca":
-        return "Liderança";
+        return "Articulador Político";
       case "assessor":
         return "Assessor";
       default:
@@ -250,7 +250,7 @@ export default function GerenciamentoUsuariosScreen() {
           </View>
         </View>
 
-        {/* Mostra o vereador vinculado para assessores e lideranças */}
+        {/* Mostra o vereador vinculado para assessores e Articuladores Políticos */}
         {(user.role === "assessor" || user.role === "lideranca") && user.vereadorName && (
           <View style={styles.vereadorInfo}>
             <Text style={styles.vereadorLabel}>Vinculado a:</Text>
@@ -361,7 +361,7 @@ export default function GerenciamentoUsuariosScreen() {
           <View style={styles.filterSection}>
             <Text style={styles.filterLabel}>Perfil</Text>
             <View style={styles.filterOptions}>
-              {/* Admin vê todos os filtros, vereador/assessor só veem assessor e liderança */}
+              {/* Admin vê todos os filtros, vereador/assessor só veem assessor e Articulador Político */}
               {(currentUser?.role === "admin"
                 ? ["all", "admin", "vereador", "assessor", "lideranca"]
                 : ["all", "assessor", "lideranca"]

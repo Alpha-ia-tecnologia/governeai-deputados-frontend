@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+﻿import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -50,7 +50,7 @@ export default function EditVisitScreen() {
 
   const handleSubmit = async () => {
     if (!selectedLeaderId) {
-      showToast({ type: 'error', title: 'Campo obrigatório', message: 'Por favor, selecione uma liderança' });
+      showToast({ type: 'error', title: 'Campo obrigatório', message: 'Por favor, selecione uma Articulador Político' });
       return;
     }
 
@@ -71,7 +71,7 @@ export default function EditVisitScreen() {
         objective: objective.trim(),
         result: result.trim() || undefined,
         nextSteps: nextSteps.trim() || undefined,
-        vereadorId: selectedLeader?.vereadorId, // Atualiza o vereadorId baseado na liderança
+        vereadorId: selectedLeader?.vereadorId, // Atualiza o vereadorId baseado na Articulador Político
       });
 
       showToast({ type: 'success', title: 'Sucesso', message: 'Visita atualizada com sucesso!' });
@@ -121,7 +121,7 @@ export default function EditVisitScreen() {
 
           <View style={styles.field}>
             <Text style={styles.label}>
-              Liderança Responsável <Text style={styles.required}>*</Text>
+              Articulador Político Responsável <Text style={styles.required}>*</Text>
             </Text>
             <View style={styles.chipContainer}>
               {leaders.map((leader) => (

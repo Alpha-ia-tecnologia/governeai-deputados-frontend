@@ -1,0 +1,100 @@
+product_name: "Governe AI Deputados"
+product_description: "Political management system for Brazilian congressional representatives"
+version: "1.0.0"
+last_updated: "2026-03-02"
+
+modules:
+  - name: "Authentication"
+    description: "User login and session management"
+    features:
+      - id: "AUTH-001"
+        name: "Login"
+        description: "User can login with email and password"
+        priority: "high"
+        acceptance_criteria:
+          - "User sees login form with email and password fields"
+          - "User can submit credentials"
+          - "Valid credentials redirect to home dashboard"
+          - "Invalid credentials show error message"
+
+  - name: "Dashboard"
+    description: "Main dashboard with KPIs and navigation"
+    features:
+      - id: "DASH-001"
+        name: "Home Dashboard"
+        description: "Shows key metrics and recent activity"
+        priority: "high"
+
+  - name: "Voter Management"
+    description: "CRUD operations for voter records"
+    features:
+      - id: "VOTER-001"
+        name: "List Voters"
+        description: "View and search registered voters"
+        priority: "high"
+      - id: "VOTER-002"
+        name: "Add Voter"
+        description: "Register a new voter"
+        priority: "high"
+
+  - name: "Agenda Management"
+    description: "Appointment scheduling and management"
+    features:
+      - id: "AGENDA-001"
+        name: "View Agenda"
+        description: "View scheduled appointments"
+        priority: "high"
+      - id: "AGENDA-002"
+        name: "Create Appointment"
+        description: "Schedule a new appointment"
+        priority: "high"
+
+  - name: "Legislative Bills"
+    description: "Track and manage legislative bills"
+    features:
+      - id: "BILLS-001"
+        name: "Manage Bills"
+        description: "CRUD operations for legislative bills"
+        priority: "medium"
+
+  - name: "CEAP Expenses"
+    description: "Parliamentary expense tracking"
+    features:
+      - id: "CEAP-001"
+        name: "Manage CEAP"
+        description: "Register and track CEAP expenses with quota"
+        priority: "medium"
+
+  - name: "City Management"
+    description: "Manage municipalities and goals"
+    features:
+      - id: "CITY-001"
+        name: "Manage Cities"
+        description: "CRUD operations for cities in Maranhão"
+        priority: "medium"
+
+  - name: "User Administration"
+    description: "Admin user management"
+    features:
+      - id: "ADMIN-001"
+        name: "User Management"
+        description: "Create, edit, activate/deactivate users"
+        priority: "high"
+
+tech_stack:
+  frontend:
+    framework: "React Native (Expo SDK 54)"
+    language: "TypeScript"
+    runtime: "Web"
+    port: 8081
+  backend:
+    framework: "NestJS"
+    language: "TypeScript"
+    port: 3750
+
+authentication:
+  method: "JWT"
+  login_url: "/login"
+  credentials:
+    email_field: "email"
+    password_field: "password"

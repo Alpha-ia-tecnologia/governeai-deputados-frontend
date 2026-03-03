@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Mock data for SGP-DEP modules — demonstration / development only.
  * Provides realistic data so hub and management screens render populated UIs.
  */
@@ -39,7 +39,7 @@ export const MOCK_TASKS: GabineteTask[] = [
     { id: id("task", 4), title: "Responder ofícios da Comissão de Infraestrutura", description: "Ofícios 45, 46, 47 pendentes de resposta.", assigneeId: id("staff", 2), assigneeName: "Carlos Eduardo Silva", status: "atrasada", priority: "alta", dueDate: dateStr(5), createdAt: daysAgo(15), updatedAt: daysAgo(3) },
     { id: id("task", 5), title: "Publicar nota sobre votação do PL de Saneamento", description: "Preparar release para imprensa sobre votação favorável.", assigneeId: id("staff", 3), assigneeName: "Mariana Costa", status: "concluida", priority: "media", dueDate: dateStr(2), completedAt: daysAgo(2), createdAt: daysAgo(6), updatedAt: daysAgo(2) },
     { id: id("task", 6), title: "Organizar visita à escola municipal do Paranoá", description: "Logística de transporte e agenda para visita escolar.", assigneeId: id("staff", 6), assigneeName: "Thiago Ramos", status: "pendente", priority: "baixa", dueDate: dateStr(-5), createdAt: daysAgo(3), updatedAt: daysAgo(1) },
-    { id: id("task", 7), title: "Atualizar cadastro de lideranças comunitárias", description: "Verificar dados de contato e inserir novas lideranças.", assigneeId: id("staff", 4), assigneeName: "Rafael Oliveira", status: "em_andamento", priority: "media", dueDate: dateStr(-3), createdAt: daysAgo(8), updatedAt: daysAgo(1) },
+    { id: id("task", 7), title: "Atualizar cadastro de Articuladores Políticos comunitárias", description: "Verificar dados de contato e inserir novas Articuladores Políticos.", assigneeId: id("staff", 4), assigneeName: "Rafael Oliveira", status: "em_andamento", priority: "media", dueDate: dateStr(-3), createdAt: daysAgo(8), updatedAt: daysAgo(1) },
     { id: id("task", 8), title: "Elaborar emenda ao PL do Transporte Público", description: "Emenda propondo gratuidade para estudantes de baixa renda.", assigneeId: id("staff", 2), assigneeName: "Carlos Eduardo Silva", status: "concluida", priority: "alta", dueDate: dateStr(1), completedAt: daysAgo(0), createdAt: daysAgo(12), updatedAt: daysAgo(0) },
 ];
 

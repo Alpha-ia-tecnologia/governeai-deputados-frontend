@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+﻿import React, { useMemo, useState } from "react";
 import {
     View,
     Text,
@@ -138,7 +138,7 @@ export function InsightsPanel({ voters, leaders, helpRecords, visits }: Insights
         };
     }, [voters]);
 
-    // ========== PERFORMANCE DAS LIDERANÇAS ==========
+    // ========== PERFORMANCE DAS Articuladores Políticos ==========
     const leaderInsights = useMemo(() => {
         const activeLeaders = leaders.filter((l) => l.active);
         const inactiveLeaders = leaders.filter((l) => !l.active);
@@ -167,7 +167,7 @@ export function InsightsPanel({ voters, leaders, helpRecords, visits }: Insights
             ? (totalVotersFromLeaders / totalGoal) * 100
             : 0;
 
-        // Lideranças sem eleitores (possível problema)
+        // Articuladores Políticos sem eleitores (possível problema)
         const zeroVoters = activeLeaders.filter((l) => l.votersCount === 0).length;
 
         return {
@@ -498,10 +498,10 @@ export function InsightsPanel({ voters, leaders, helpRecords, visits }: Insights
                 )}
             </View>
 
-            {/* ========== LIDERANÇAS ========== */}
+            {/* ========== Articuladores Políticos ========== */}
             <View style={[styles.section, { backgroundColor: colors.card, borderColor: colors.border }]}>
                 {renderSectionHeader(
-                    "Performance das Lideranças",
+                    "Performance das Articuladores Políticos",
                     <Award color={colors.secondary} size={18} />,
                     "leaders",
                     colors.secondary
@@ -531,12 +531,12 @@ export function InsightsPanel({ voters, leaders, helpRecords, visits }: Insights
                             )}
                         </View>
 
-                        {/* Alerta de lideranças sem eleitores */}
+                        {/* Alerta de Articuladores Políticos sem eleitores */}
                         {leaderInsights.zeroVoters > 0 && (
                             <View style={[styles.alertCard, { backgroundColor: withOpacity(colors.warning, 0.1), borderColor: withOpacity(colors.warning, 0.3) }]}>
                                 <AlertTriangle color={colors.warning} size={16} />
                                 <Text style={[styles.alertText, { color: colors.warning }]}>
-                                    {leaderInsights.zeroVoters} liderança{leaderInsights.zeroVoters > 1 ? "s" : ""} ativa{leaderInsights.zeroVoters > 1 ? "s" : ""} sem eleitores cadastrados
+                                    {leaderInsights.zeroVoters} Articulador Político{leaderInsights.zeroVoters > 1 ? "s" : ""} ativa{leaderInsights.zeroVoters > 1 ? "s" : ""} sem eleitores cadastrados
                                 </Text>
                             </View>
                         )}
@@ -545,14 +545,14 @@ export function InsightsPanel({ voters, leaders, helpRecords, visits }: Insights
                             <View style={[styles.alertCard, { backgroundColor: withOpacity(colors.error, 0.08), borderColor: withOpacity(colors.error, 0.2) }]}>
                                 <AlertTriangle color={colors.error} size={16} />
                                 <Text style={[styles.alertText, { color: colors.error }]}>
-                                    {leaderInsights.inactiveCount} liderança{leaderInsights.inactiveCount > 1 ? "s" : ""} inativa{leaderInsights.inactiveCount > 1 ? "s" : ""}
+                                    {leaderInsights.inactiveCount} Articulador Político{leaderInsights.inactiveCount > 1 ? "s" : ""} inativa{leaderInsights.inactiveCount > 1 ? "s" : ""}
                                 </Text>
                             </View>
                         )}
 
                         {/* Top 5 Ranking */}
                         <Text style={[styles.subTitle, { color: colors.text }]}>
-                            🏆 Top 5 Lideranças
+                            🏆 Top 5 Articuladores Políticos
                         </Text>
                         {leaderInsights.ranking.map((leader, i) => (
                             <View key={leader.id} style={styles.rankItem}>

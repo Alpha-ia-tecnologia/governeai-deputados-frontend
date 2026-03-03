@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+﻿import React, { useState } from "react";
 import {
   View,
   Text,
@@ -43,13 +43,13 @@ export function ChatBot() {
 Informações do sistema:
 - Usuário atual: ${user?.name || "Não autenticado"} (${user?.role || "N/A"})
 - Total de eleitores cadastrados: ${voters.length}
-- Total de lideranças: ${leaders.length}
+- Total de Articuladores Políticos: ${leaders.length}
 - Total de atendimentos: ${helpRecords.length}
 - Total de visitas: ${visits.length}
 
 Módulos disponíveis no sistema:
 1. Gestão de Eleitores - cadastro, edição e visualização de eleitores
-2. Gestão de Lideranças - gerenciamento de lideranças políticas
+2. Gestão de Articuladores Políticos - gerenciamento de Articuladores Políticos políticas
 3. Histórico de Ajuda - registro de atendimentos realizados
 4. Visitas - registro de visitas às comunidades
 5. Projetos de Lei - gerenciamento de projetos legislativos

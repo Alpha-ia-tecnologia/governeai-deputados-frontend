@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+﻿import React, { useState } from "react";
 import {
   View,
   Text,
@@ -27,7 +27,7 @@ export default function VotersScreen() {
   const selectedLeaderData = leaders.find((l) => l.id === selectedLeader);
   const filterLabel = selectedLeaderData
     ? `${selectedLeaderData.name} (${selectedLeaderData.votersCount})`
-    : `Todas as Lideranças (${filteredVoters.length})`;
+    : `Todas as Articuladores Políticos (${filteredVoters.length})`;
 
   const handleSelectLeader = (leaderId?: string) => {
     setSelectedLeader(leaderId);
@@ -48,7 +48,7 @@ export default function VotersScreen() {
           <Text style={styles.voterDetails}>
             {item.phone} • {item.neighborhood}
           </Text>
-          <Text style={styles.voterLeader}>Liderança: {item.leaderName}</Text>
+          <Text style={styles.voterLeader}>Articulador Político: {item.leaderName}</Text>
         </View>
         <View style={styles.voterBadge}>
           <Text style={styles.voterBadgeText}>{item.votesCount}</Text>
@@ -90,7 +90,7 @@ export default function VotersScreen() {
           onPress={() => router.push("/manage-leaders")}
         >
           <Users color={Colors.light.primary} size={20} />
-          <Text style={styles.manageLeadersText}>Gerenciar Lideranças</Text>
+          <Text style={styles.manageLeadersText}>Gerenciar Articuladores Políticos</Text>
         </TouchableOpacity>
       </View>
       <View style={styles.header}>
@@ -163,7 +163,7 @@ export default function VotersScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Filtrar por Liderança</Text>
+              <Text style={styles.modalTitle}>Filtrar por Articulador Político</Text>
               <TouchableOpacity
                 style={styles.modalCloseButton}
                 onPress={() => setShowLeaderModal(false)}
@@ -190,7 +190,7 @@ export default function VotersScreen() {
                         !selectedLeader && styles.leaderItemNameSelected,
                       ]}
                     >
-                      Todas as Lideranças
+                      Todas as Articuladores Políticos
                     </Text>
                     <Text style={styles.leaderItemCount}>
                       Mostrar todos os eleitores

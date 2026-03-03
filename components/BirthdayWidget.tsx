@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+﻿import React, { useState, useMemo } from "react";
 import {
     View,
     Text,
@@ -193,7 +193,7 @@ export function BirthdayWidget({ voters, leaders }: BirthdayWidgetProps) {
                                 },
                             ]}
                         >
-                            {person.type === "leader" ? "Liderança" : "Eleitor"}
+                            {person.type === "leader" ? "Articulador Político" : "Eleitor"}
                         </Text>
                     </View>
                     {daysUntil && (
@@ -324,7 +324,7 @@ export function BirthdayWidget({ voters, leaders }: BirthdayWidgetProps) {
                                                         },
                                                     ]}
                                                 >
-                                                    {selectedPerson.type === "leader" ? "Liderança" : "Eleitor"}
+                                                    {selectedPerson.type === "leader" ? "Articulador Político" : "Eleitor"}
                                                 </Text>
                                             </View>
                                         </View>
@@ -387,7 +387,7 @@ export function BirthdayWidget({ voters, leaders }: BirthdayWidgetProps) {
                                             <View style={styles.detailItem}>
                                                 <User color={Colors.light.primary} size={20} />
                                                 <Text style={[styles.detailItemText, { color: colors.text }]}>
-                                                    Liderança: {selectedPerson.leaderName}
+                                                    Articulador Político: {selectedPerson.leaderName}
                                                 </Text>
                                             </View>
                                         )}

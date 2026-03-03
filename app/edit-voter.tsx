@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+﻿import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -208,7 +208,7 @@ export default function EditVoterScreen() {
       return false;
     }
     if (!formData.leaderId) {
-      showToast({ type: 'error', title: 'Campo obrigatório', message: 'Liderança responsável é obrigatória' });
+      showToast({ type: 'error', title: 'Campo obrigatório', message: 'Articulador Político responsável é obrigatória' });
       return false;
     }
     return true;
@@ -586,7 +586,7 @@ export default function EditVoterScreen() {
 
           <View style={styles.inputGroup}>
             <Text style={styles.label}>
-              Liderança Responsável <Text style={styles.required}>*</Text>
+              Articulador Político Responsável <Text style={styles.required}>*</Text>
             </Text>
             <TouchableOpacity
               style={styles.picker}
@@ -598,7 +598,7 @@ export default function EditVoterScreen() {
                   !formData.leaderName && styles.pickerPlaceholder,
                 ]}
               >
-                {formData.leaderName || "Selecione uma liderança"}
+                {formData.leaderName || "Selecione uma Articulador Político"}
               </Text>
               <ChevronDown color={Colors.light.textSecondary} size={20} />
             </TouchableOpacity>
@@ -608,7 +608,7 @@ export default function EditVoterScreen() {
                 {leaders.filter((l) => l.active).length === 0 ? (
                   <View style={styles.noLeadersContainer}>
                     <Text style={styles.noLeadersText}>
-                      Nenhuma liderança cadastrada
+                      Nenhuma Articulador Político cadastrada
                     </Text>
                     <TouchableOpacity
                       style={styles.addLeaderLink}
@@ -618,7 +618,7 @@ export default function EditVoterScreen() {
                       }}
                     >
                       <Text style={styles.addLeaderLinkText}>
-                        + Cadastrar Liderança
+                        + Cadastrar Articulador Político
                       </Text>
                     </TouchableOpacity>
                   </View>

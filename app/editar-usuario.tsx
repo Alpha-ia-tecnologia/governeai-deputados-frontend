@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+﻿import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -96,7 +96,7 @@ export default function EditarUsuarioScreen() {
     },
     {
       value: "lideranca",
-      label: "Liderança",
+      label: "Articulador Político",
       description: "Gestão de eleitores da região",
     },
     {
@@ -488,7 +488,7 @@ export default function EditarUsuarioScreen() {
               )}
             </View>
 
-            {/* Seletor de Vereador para assessor e liderança */}
+            {/* Seletor de Vereador para assessor e Articulador Político */}
             {needsVereadorSelection && (
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>Vereador Responsável *</Text>

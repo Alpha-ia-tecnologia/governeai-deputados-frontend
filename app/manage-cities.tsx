@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+﻿import React, { useState, useMemo } from "react";
 import {
     View,
     Text,
@@ -237,7 +237,7 @@ export default function ManageCitiesScreen() {
                                 <View style={[styles.goalChip, { backgroundColor: colors.backgroundSecondary }]}>
                                     <Target color={colors.success || colors.primary} size={14} />
                                     <Text style={[styles.goalText, { color: colors.text }]}>
-                                        Meta Lideranças: {city.leadersGoal || 0}
+                                        Meta Articuladores Políticos: {city.leadersGoal || 0}
                                     </Text>
                                 </View>
                             </View>
@@ -349,7 +349,7 @@ export default function ManageCitiesScreen() {
                                     />
                                 </View>
                                 <View style={styles.goalField}>
-                                    <Text style={[styles.label, { color: colors.text }]}>Meta de Lideranças</Text>
+                                    <Text style={[styles.label, { color: colors.text }]}>Meta de Articuladores Políticos</Text>
                                     <TextInput
                                         style={[styles.input, { backgroundColor: colors.backgroundSecondary, color: colors.text, borderColor: colors.border }]}
                                         placeholder="0"

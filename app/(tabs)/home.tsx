@@ -1,4 +1,4 @@
-import React, { useMemo, useCallback } from "react";
+﻿import React, { useMemo, useCallback } from "react";
 import {
   View,
   Text,
@@ -242,7 +242,7 @@ export default function HomeScreen() {
       : user?.role === "admin"
         ? "Administrador"
         : user?.role === "lideranca"
-          ? "Liderança"
+          ? "Articulador Político"
           : "Assessor(a)";
 
   return (
@@ -360,7 +360,7 @@ export default function HomeScreen() {
             <EnhancedStatCard
               title="Articulação Política"
               value={stats.totalContacts}
-              subtitle={`${stats.activeLeaders} lideranças ativas`}
+              subtitle={`${stats.activeLeaders} Articuladores Políticos ativas`}
               icon={<Handshake color={colors.secondary} size={22} />}
               color={colors.secondary}
               delay={200}

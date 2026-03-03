@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+﻿import React, { useState } from "react";
 import {
   View,
   Text,
@@ -65,7 +65,7 @@ export default function AddVisitScreen() {
       }
 
       if (!voter.leaderId) {
-        showToast({ type: 'error', title: 'Erro', message: 'Este eleitor não possui uma liderança associada.' });
+        showToast({ type: 'error', title: 'Erro', message: 'Este eleitor não possui uma Articulador Político associada.' });
         setIsSubmitting(false);
         return;
       }

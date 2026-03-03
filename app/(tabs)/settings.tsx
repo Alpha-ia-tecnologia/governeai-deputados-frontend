@@ -1,4 +1,4 @@
-import React from "react";
+﻿import React from "react";
 import {
   View,
   Text,
@@ -207,7 +207,7 @@ export default function SettingsScreen() {
               : user?.role === "admin"
                 ? "Administrador"
                 : user?.role === "lideranca"
-                  ? "Liderança"
+                  ? "Articulador Político"
                   : "Assessor"}
           </Text>
         </View>

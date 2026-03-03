@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+﻿import React, { useState } from "react";
 import {
   View,
   Text,
@@ -115,7 +115,7 @@ export default function ProfileScreen() {
       case "admin":
         return "Administrador";
       case "lideranca":
-        return "Liderança";
+        return "Articulador Político";
       case "assessor":
         return "Assessor";
       default:

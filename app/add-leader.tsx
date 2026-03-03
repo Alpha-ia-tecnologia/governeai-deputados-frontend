@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+﻿import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -179,7 +179,7 @@ export default function AddLeaderScreen() {
       setLoading(false);
 
       // Mostrar mensagem de sucesso e navegar
-      showToast({ type: 'success', title: 'Sucesso', message: 'Liderança cadastrada com sucesso!' });
+      showToast({ type: 'success', title: 'Sucesso', message: 'Articulador Político cadastrada com sucesso!' });
       setTimeout(() => {
         console.log("AddLeader: Navigating to manage-leaders");
         router.replace("/manage-leaders");
@@ -187,7 +187,7 @@ export default function AddLeaderScreen() {
     } catch (error: any) {
       console.error("AddLeader: Error adding leader:", error);
       setLoading(false);
-      const errorMessage = error.message || "Não foi possível cadastrar a liderança";
+      const errorMessage = error.message || "Não foi possível cadastrar a Articulador Político";
       showToast({ type: 'error', title: 'Erro', message: errorMessage });
     }
   };
@@ -196,7 +196,7 @@ export default function AddLeaderScreen() {
     <>
       <Stack.Screen
         options={{
-          title: "Nova Liderança",
+          title: "Nova Articulador Político",
           headerStyle: {
             backgroundColor: Colors.light.primary,
           },
@@ -379,7 +379,7 @@ export default function AddLeaderScreen() {
 
         <View style={styles.footer}>
           <Button
-            title="Cadastrar Liderança"
+            title="Cadastrar Articulador Político"
             onPress={handleSubmit}
             loading={loading}
             disabled={loading}

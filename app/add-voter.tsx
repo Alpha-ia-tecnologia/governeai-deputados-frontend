@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+﻿import React, { useState } from "react";
 import {
   View,
   Text,
@@ -188,7 +188,7 @@ export default function AddVoterScreen() {
 
       let finalLeaderId = formData.leaderId;
 
-      // Se a liderança selecionada é um usuário órfão (userId igual ao id),
+      // Se a Articulador Político selecionada é um usuário órfão (userId igual ao id),
       // precisamos criar o registro de Leader primeiro
       if (selectedLeader && selectedLeader.userId === selectedLeader.id) {
         console.log('AddVoterScreen: Criando leader para usuário órfão:', selectedLeader.userId);
@@ -206,7 +206,7 @@ export default function AddVoterScreen() {
           refreshData();
         } catch (err) {
           console.error('AddVoterScreen: Erro ao criar leader:', err);
-          showToast({ type: 'error', title: 'Erro', message: 'Não foi possível registrar a liderança. Tente novamente.' });
+          showToast({ type: 'error', title: 'Erro', message: 'Não foi possível registrar a Articulador Político. Tente novamente.' });
           setLoading(false);
           return;
         }
@@ -649,7 +649,7 @@ export default function AddVoterScreen() {
 
           <View style={styles.inputGroup}>
             <Text style={styles.label}>
-              Liderança Responsável <Text style={styles.required}>*</Text>
+              Articulador Político Responsável <Text style={styles.required}>*</Text>
             </Text>
             <TouchableOpacity
               style={styles.picker}
@@ -661,7 +661,7 @@ export default function AddVoterScreen() {
                   !formData.leaderName && styles.pickerPlaceholder,
                 ]}
               >
-                {formData.leaderName || "Selecione uma liderança"}
+                {formData.leaderName || "Selecione uma Articulador Político"}
               </Text>
               <ChevronDown color={Colors.light.textSecondary} size={20} />
             </TouchableOpacity>
@@ -671,7 +671,7 @@ export default function AddVoterScreen() {
                 {leaders.filter((l) => l.active).length === 0 ? (
                   <View style={styles.noLeadersContainer}>
                     <Text style={styles.noLeadersText}>
-                      Nenhuma liderança cadastrada
+                      Nenhuma Articulador Político cadastrada
                     </Text>
                     <TouchableOpacity
                       style={styles.addLeaderLink}
@@ -681,7 +681,7 @@ export default function AddVoterScreen() {
                       }}
                     >
                       <Text style={styles.addLeaderLinkText}>
-                        + Cadastrar Liderança
+                        + Cadastrar Articulador Político
                       </Text>
                     </TouchableOpacity>
                   </View>

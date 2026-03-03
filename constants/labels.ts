@@ -1,4 +1,4 @@
-// Labels para exibição de status e categorias
+﻿// Labels para exibição de status e categorias
 
 export const StatusLabels: Record<string, string> = {
   // Status gerais
@@ -43,7 +43,7 @@ export const CategoryLabels: Record<string, string> = {
 export const RoleLabels: Record<string, string> = {
   admin: "Administrador",
   vereador: "Vereador",
-  lideranca: "Liderança",
+  lideranca: "Articulador Político",
   assessor: "Assessor",
 };
 

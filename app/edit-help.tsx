@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+﻿import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -80,7 +80,7 @@ export default function EditHelpScreen() {
 
   const handleSubmit = async () => {
     if (!selectedLeaderId) {
-      showToast({ type: 'error', title: 'Campo obrigatório', message: 'Por favor, selecione uma liderança' });
+      showToast({ type: 'error', title: 'Campo obrigatório', message: 'Por favor, selecione uma Articulador Político' });
       return;
     }
 
@@ -101,7 +101,7 @@ export default function EditHelpScreen() {
         description: description.trim(),
         status,
         notes: notes.trim() || undefined,
-        vereadorId: selectedLeader?.vereadorId, // Atualiza o vereadorId baseado na liderança
+        vereadorId: selectedLeader?.vereadorId, // Atualiza o vereadorId baseado na Articulador Político
       });
 
       showToast({ type: 'success', title: 'Sucesso', message: 'Ajuda atualizada com sucesso!' });
@@ -151,7 +151,7 @@ export default function EditHelpScreen() {
 
           <View style={styles.field}>
             <Text style={styles.label}>
-              Liderança Responsável <Text style={styles.required}>*</Text>
+              Articulador Político Responsável <Text style={styles.required}>*</Text>
             </Text>
             <View style={styles.chipContainer}>
               {leaders.map((leader) => (
