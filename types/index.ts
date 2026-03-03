@@ -337,6 +337,7 @@ export interface GabineteTask {
   dueDate: string;
   completedAt?: string;
   notes?: string;
+  color?: string;
   createdAt: string;
   updatedAt: string;
 }
