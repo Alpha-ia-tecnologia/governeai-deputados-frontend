@@ -346,13 +346,33 @@ function getAdelmoCities() {
 export function getMockDeputadoCityData(): MockCityData[] {
     const cities = getAdelmoCities();
     const total = cities.reduce((s, c) => s + c.votes, 0);
-    return cities.map(c => ({
-        city: c.name, state: 'MA', totalVotes: c.votes,
-        zonesCount: Math.max(1, Math.floor(c.votes / 500)),
-        sectionsCount: Math.max(2, Math.floor(c.votes / 100)),
-        percentage: ((c.votes / total) * 100).toFixed(2),
-        topCandidate: { name: 'ADELMO SOARES', party: selectedYear === 2018 ? 'PCdoB' : 'PSB', votes: c.votes },
-    }));
+    const candidates = getActiveCandidates();
+    const sorted = [...candidates].sort((a, b) => b.totalVotes - a.totalVotes);
+    const adelmoParty = selectedYear === 2018 ? 'PCdoB' : 'PSB';
+
+    return cities.map((c, index) => {
+        // Only in Adelmo's top 2 cities he's likely the actual leader
+        // In other cities, the overall top candidates lead
+        let topCandidate: { name: string; party: string; votes: number };
+
+        if (index < 2) {
+            // Adelmo's strongest cities — he leads
+            topCandidate = { name: 'ADELMO SOARES', party: adelmoParty, votes: c.votes };
+        } else {
+            // Other cities — a top-ranked state candidate leads with more votes
+            const leader = sorted[index % sorted.length];
+            const leaderVotes = Math.floor(c.votes * (1.2 + Math.random() * 1.5));
+            topCandidate = { name: leader.name, party: leader.party, votes: leaderVotes };
+        }
+
+        return {
+            city: c.name, state: 'MA', totalVotes: c.votes,
+            zonesCount: Math.max(1, Math.floor(c.votes / 500)),
+            sectionsCount: Math.max(2, Math.floor(c.votes / 100)),
+            percentage: ((c.votes / total) * 100).toFixed(2),
+            topCandidate,
+        };
+    });
 }
 
 export function getMockDeputadoCityDetails(cityName: string) {
