@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   View,
   Text,
@@ -22,6 +22,9 @@ import {
   User,
   CheckCircle2,
   Circle,
+  ChevronLeft,
+  ChevronRight,
+  List,
 } from "lucide-react-native";
 import Colors from "@/constants/colors";
 import { Badge, Button } from "@/components/UI";
@@ -91,6 +94,7 @@ export default function AgendaScreen() {
   const { user } = useAuth();
   const upcomingAppointments = useUpcomingAppointments(30);
   const { showAlert: showDeleteAlert, AlertDialogComponent: DeleteAlertDialog } = useAlertDialog();
+  const { showAlert: showFeedbackAlert, AlertDialogComponent: FeedbackAlertDialog } = useAlertDialog();
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [showCompleteModal, setShowCompleteModal] = useState(false);
@@ -100,6 +104,12 @@ export default function AgendaScreen() {
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [selectedTime, setSelectedTime] = useState(new Date());
+
+  // Calendar state
+  const [viewMode, setViewMode] = useState<'calendar' | 'list'>('calendar');
+  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [selectedDay, setSelectedDay] = useState<Date | null>(new Date());
+  const [showDayModal, setShowDayModal] = useState(false);
 
   // Inicializar com data e hora atuais
   const getInitialDate = () => {
@@ -144,7 +154,13 @@ export default function AgendaScreen() {
 
     if (!formData.title || !formData.date || !formData.time) {
       console.log('Validation failed - missing required fields');
-      showAlert("Erro", "Preencha todos os campos obrigatórios");
+      showFeedbackAlert({
+        title: "Campos obrigatórios",
+        description: "Preencha todos os campos obrigatórios antes de salvar.",
+        confirmText: "Entendi",
+        variant: "warning",
+        showCancel: false,
+      });
       return;
     }
 
@@ -154,14 +170,26 @@ export default function AgendaScreen() {
 
     if (dateParts.length !== 3) {
       console.log('Validation failed - date format incorrect');
-      showAlert("Erro", "Data inválida. Use o formato DD-MM-AAAA");
+      showFeedbackAlert({
+        title: "Data inválida",
+        description: "Use o formato DD-MM-AAAA para a data.",
+        confirmText: "Entendi",
+        variant: "warning",
+        showCancel: false,
+      });
       return;
     }
 
     const [day, month, year] = dateParts;
     if (!day || !month || !year || year.length !== 4) {
       console.log('Validation failed - date parts invalid');
-      showAlert("Erro", "Data inválida. Use o formato DD-MM-AAAA");
+      showFeedbackAlert({
+        title: "Data inválida",
+        description: "Use o formato DD-MM-AAAA para a data.",
+        confirmText: "Entendi",
+        variant: "warning",
+        showCancel: false,
+      });
       return;
     }
 
@@ -201,13 +229,25 @@ export default function AgendaScreen() {
       await addAppointment(appointmentData);
       console.log('Appointment added successfully');
 
-      showAlert("Sucesso", "Compromisso cadastrado com sucesso!");
+      showFeedbackAlert({
+        title: "Compromisso salvo!",
+        description: "O compromisso foi cadastrado com sucesso na sua agenda.",
+        confirmText: "OK",
+        variant: "success",
+        showCancel: false,
+      });
       setShowAddModal(false);
       resetForm();
     } catch (error: any) {
       console.error("Error adding appointment:", error);
       const errorMessage = error?.message || error?.toString() || "Não foi possível cadastrar o compromisso";
-      showAlert("Erro", errorMessage);
+      showFeedbackAlert({
+        title: "Erro ao salvar",
+        description: errorMessage,
+        confirmText: "Fechar",
+        variant: "danger",
+        showCancel: false,
+      });
     }
   };
 
@@ -216,13 +256,25 @@ export default function AgendaScreen() {
 
     try {
       await completeAppointment(selectedAppointment.id, completionNotes);
-      showAlert("Sucesso", "Compromisso concluído!");
+      showFeedbackAlert({
+        title: "Compromisso concluído!",
+        description: "O compromisso foi marcado como concluído com sucesso.",
+        confirmText: "OK",
+        variant: "success",
+        showCancel: false,
+      });
       setShowCompleteModal(false);
       setSelectedAppointment(null);
       setCompletionNotes("");
     } catch (error) {
       console.error("Error completing appointment:", error);
-      showAlert("Erro", "Não foi possível concluir o compromisso");
+      showFeedbackAlert({
+        title: "Erro",
+        description: "Não foi possível concluir o compromisso. Tente novamente.",
+        confirmText: "Fechar",
+        variant: "danger",
+        showCancel: false,
+      });
     }
   };
 
@@ -236,10 +288,22 @@ export default function AgendaScreen() {
       onConfirm: async () => {
         try {
           await deleteAppointment(id);
-          showAlert("Sucesso", "Compromisso excluído!");
+          showFeedbackAlert({
+            title: "Compromisso excluído",
+            description: "O compromisso foi removido da sua agenda.",
+            confirmText: "OK",
+            variant: "success",
+            showCancel: false,
+          });
         } catch (error) {
           console.error("Error deleting appointment:", error);
-          showAlert("Erro", "Não foi possível excluir o compromisso");
+          showFeedbackAlert({
+            title: "Erro",
+            description: "Não foi possível excluir o compromisso. Tente novamente.",
+            confirmText: "Fechar",
+            variant: "danger",
+            showCancel: false,
+          });
         }
       },
     });
@@ -320,6 +384,84 @@ export default function AgendaScreen() {
     }
   };
 
+  // === Calendar helpers ===
+  const WEEKDAYS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+  const MONTH_NAMES = [
+    'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+    'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
+  ];
+
+  const navigateMonth = (direction: number) => {
+    const newMonth = new Date(currentMonth);
+    newMonth.setMonth(newMonth.getMonth() + direction);
+    setCurrentMonth(newMonth);
+    setSelectedDay(null);
+  };
+
+  const goToToday = () => {
+    const today = new Date();
+    setCurrentMonth(today);
+    setSelectedDay(today);
+  };
+
+  const calendarDays = useMemo(() => {
+    const year = currentMonth.getFullYear();
+    const month = currentMonth.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const startPadding = firstDay.getDay(); // 0=Sun
+    const daysInMonth = lastDay.getDate();
+
+    const days: { date: Date; isCurrentMonth: boolean }[] = [];
+
+    // Previous month padding
+    for (let i = startPadding - 1; i >= 0; i--) {
+      const d = new Date(year, month, -i);
+      days.push({ date: d, isCurrentMonth: false });
+    }
+
+    // Current month days
+    for (let i = 1; i <= daysInMonth; i++) {
+      days.push({ date: new Date(year, month, i), isCurrentMonth: true });
+    }
+
+    // Next month padding (fill to 42 = 6 rows)
+    const remaining = 42 - days.length;
+    for (let i = 1; i <= remaining; i++) {
+      days.push({ date: new Date(year, month + 1, i), isCurrentMonth: false });
+    }
+
+    return days;
+  }, [currentMonth]);
+
+  const getAppointmentsForDay = (date: Date): Appointment[] => {
+    const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    return appointments.filter((a) => a.date === dateStr && a.status !== 'cancelled');
+  };
+
+  const isSameDay = (d1: Date, d2: Date) => {
+    return d1.getFullYear() === d2.getFullYear() &&
+      d1.getMonth() === d2.getMonth() &&
+      d1.getDate() === d2.getDate();
+  };
+
+  const isToday = (date: Date) => isSameDay(date, new Date());
+
+  const selectedDayAppointments = useMemo(() => {
+    if (!selectedDay) return [];
+    return getAppointmentsForDay(selectedDay).sort((a, b) => a.time.localeCompare(b.time));
+  }, [selectedDay, appointments]);
+
+  const handleAddFromCalendar = () => {
+    if (selectedDay) {
+      const day = String(selectedDay.getDate()).padStart(2, '0');
+      const month = String(selectedDay.getMonth() + 1).padStart(2, '0');
+      const year = selectedDay.getFullYear();
+      setFormData(prev => ({ ...prev, date: `${day}-${month}-${year}` }));
+    }
+    setShowAddModal(true);
+  };
+
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.content}>
@@ -333,150 +475,389 @@ export default function AgendaScreen() {
           </TouchableOpacity>
         </View>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Próximos 30 dias</Text>
-          {upcomingAppointments.length === 0 ? (
-            <View style={styles.emptyContainer}>
-              <CalendarIcon color={Colors.light.textSecondary} size={48} />
-              <Text style={styles.emptyText}>Nenhum compromisso agendado</Text>
-            </View>
-          ) : (
-            upcomingAppointments.map((appointment) => {
-              const appointmentDate = new Date(`${appointment.date}T${appointment.time}`);
-
-              return (
-                <View key={appointment.id} style={styles.appointmentCard}>
-                  <View style={styles.appointmentHeader}>
-                    <View style={styles.appointmentType}>
-                      <View
-                        style={[
-                          styles.typeBadge,
-                          { backgroundColor: TypeColors[appointment.type] },
-                        ]}
-                      />
-                      <Text style={styles.appointmentTitle}>{appointment.title}</Text>
-                    </View>
-                  </View>
-
-                  {appointment.description && (
-                    <Text style={styles.appointmentDescription}>
-                      {appointment.description}
-                    </Text>
-                  )}
-
-                  <View style={styles.appointmentDetails}>
-                    <View style={styles.detailRow}>
-                      <CalendarIcon color={Colors.light.textSecondary} size={16} />
-                      <Text style={styles.detailText}>
-                        {appointmentDate.toLocaleDateString("pt-BR", {
-                          day: "2-digit",
-                          month: "long",
-                          year: "numeric",
-                        })}
-                      </Text>
-                    </View>
-
-                    <View style={styles.detailRow}>
-                      <Clock color={Colors.light.textSecondary} size={16} />
-                      <Text style={styles.detailText}>
-                        {appointmentDate.toLocaleTimeString("pt-BR", {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                        {appointment.duration && ` (${appointment.duration} min)`}
-                      </Text>
-                    </View>
-
-                    {appointment.location && (
-                      <View style={styles.detailRow}>
-                        <MapPin color={Colors.light.textSecondary} size={16} />
-                        <Text style={styles.detailText}>{appointment.location}</Text>
-                      </View>
-                    )}
-
-                    {appointment.voterName && (
-                      <View style={styles.detailRow}>
-                        <User color={Colors.light.textSecondary} size={16} />
-                        <Text style={styles.detailText}>{appointment.voterName}</Text>
-                      </View>
-                    )}
-
-                    {appointment.reminders.length > 0 && (
-                      <View style={styles.detailRow}>
-                        <Bell color={Colors.light.textSecondary} size={16} />
-                        <Text style={styles.detailText}>
-                          {appointment.reminders.length} lembrete(s) configurado(s)
-                        </Text>
-                      </View>
-                    )}
-                  </View>
-
-                  <View style={styles.appointmentActions}>
-                    <Badge
-                      label={TypeLabels[appointment.type]}
-                      color={TypeColors[appointment.type]}
-                    />
-                    <View style={styles.actionButtons}>
-                      <TouchableOpacity
-                        style={styles.completeButton}
-                        onPress={() => {
-                          setSelectedAppointment(appointment);
-                          setShowCompleteModal(true);
-                        }}
-                      >
-                        <Check color="#10B981" size={20} />
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={styles.deleteButton}
-                        onPress={() => handleDelete(appointment.id)}
-                      >
-                        <X color="#EF4444" size={20} />
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                </View>
-              );
-            })
-          )}
+        {/* View Toggle */}
+        <View style={calStyles.toggleContainer}>
+          <TouchableOpacity
+            style={[calStyles.toggleButton, viewMode === 'calendar' && calStyles.toggleButtonActive]}
+            onPress={() => setViewMode('calendar')}
+          >
+            <CalendarIcon color={viewMode === 'calendar' ? '#fff' : Colors.light.textSecondary} size={16} />
+            <Text style={[calStyles.toggleText, viewMode === 'calendar' && calStyles.toggleTextActive]}>Calendário</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[calStyles.toggleButton, viewMode === 'list' && calStyles.toggleButtonActive]}
+            onPress={() => setViewMode('list')}
+          >
+            <List color={viewMode === 'list' ? '#fff' : Colors.light.textSecondary} size={16} />
+            <Text style={[calStyles.toggleText, viewMode === 'list' && calStyles.toggleTextActive]}>Lista</Text>
+          </TouchableOpacity>
         </View>
 
-        {appointments.filter((a) => a.status === "completed").length > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Concluídos</Text>
-            {appointments
-              .filter((a) => a.status === "completed")
-              .slice(0, 5)
-              .map((appointment) => {
-                const appointmentDate = new Date(`${appointment.date}T${appointment.time}`);
+        {/* Calendar View */}
+        {viewMode === 'calendar' && (
+          <View style={calStyles.calendarContainer}>
+            {/* Month Navigation */}
+            <View style={calStyles.monthNav}>
+              <TouchableOpacity onPress={() => navigateMonth(-1)} style={calStyles.navArrow}>
+                <ChevronLeft color={Colors.light.text} size={22} />
+              </TouchableOpacity>
+              <TouchableOpacity onPress={goToToday} style={calStyles.monthTitleContainer}>
+                <Text style={calStyles.monthTitle}>
+                  {MONTH_NAMES[currentMonth.getMonth()]} {currentMonth.getFullYear()}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => navigateMonth(1)} style={calStyles.navArrow}>
+                <ChevronRight color={Colors.light.text} size={22} />
+              </TouchableOpacity>
+            </View>
+
+            {/* Weekday Headers */}
+            <View style={calStyles.weekdayRow}>
+              {WEEKDAYS.map((day) => (
+                <View key={day} style={calStyles.weekdayCell}>
+                  <Text style={[calStyles.weekdayText, day === 'Dom' && { color: Colors.light.error }]}>{day}</Text>
+                </View>
+              ))}
+            </View>
+
+            {/* Days Grid */}
+            <View style={calStyles.daysGrid}>
+              {calendarDays.map((dayObj, index) => {
+                const dayAppts = getAppointmentsForDay(dayObj.date);
+                const isSelected = selectedDay && isSameDay(dayObj.date, selectedDay);
+                const isTodayDate = isToday(dayObj.date);
+                const isSunday = dayObj.date.getDay() === 0;
 
                 return (
-                  <View key={appointment.id} style={[styles.appointmentCard, styles.completedCard]}>
-                    <View style={styles.completedHeader}>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 }}>
-                        <CheckCircle2 color="#10B981" size={20} />
-                        <Text style={styles.completedTitle}>{appointment.title}</Text>
-                      </View>
-                      <TouchableOpacity
-                        onPress={() => handleDelete(appointment.id)}
-                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                      >
-                        <X color={Colors.light.textSecondary} size={20} />
-                      </TouchableOpacity>
-                    </View>
-                    <Text style={styles.completedDate}>
-                      Concluído em{" "}
-                      {appointment.completedAt &&
-                        new Date(appointment.completedAt).toLocaleDateString("pt-BR")}
-                    </Text>
-                    {appointment.completedNotes && (
-                      <Text style={styles.completedNotes}>
-                        {appointment.completedNotes}
+                  <TouchableOpacity
+                    key={index}
+                    style={[
+                      calStyles.dayCell,
+                      isSelected && calStyles.dayCellSelected,
+                    ]}
+                    onPress={() => {
+                      setSelectedDay(dayObj.date);
+                      setShowDayModal(true);
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <View style={[
+                      calStyles.dayNumberContainer,
+                      isTodayDate && calStyles.todayCircle,
+                    ]}>
+                      <Text style={[
+                        calStyles.dayNumber,
+                        !dayObj.isCurrentMonth && calStyles.dayNumberOutside,
+                        isTodayDate && calStyles.dayNumberToday,
+                        isSunday && dayObj.isCurrentMonth && !isTodayDate && { color: Colors.light.error },
+                      ]}>
+                        {dayObj.date.getDate()}
                       </Text>
+                    </View>
+                    {dayAppts.length > 0 && (
+                      <View style={calStyles.eventLabelsContainer}>
+                        {dayAppts.slice(0, 2).map((appt, i) => (
+                          <View
+                            key={i}
+                            style={[
+                              calStyles.eventLabel,
+                              { backgroundColor: TypeColors[appt.type] },
+                            ]}
+                          >
+                            <Text style={calStyles.eventLabelText} numberOfLines={1}>
+                              {appt.title}
+                            </Text>
+                          </View>
+                        ))}
+                        {dayAppts.length > 2 && (
+                          <Text style={calStyles.eventOverflow}>
+                            +{dayAppts.length - 2} mais
+                          </Text>
+                        )}
+                      </View>
                     )}
-                  </View>
+                  </TouchableOpacity>
                 );
               })}
+            </View>
           </View>
+        )}
+
+        {/* Day Detail Modal */}
+        <Modal
+          visible={showDayModal && selectedDay !== null}
+          animationType="fade"
+          transparent
+          onRequestClose={() => setShowDayModal(false)}
+        >
+          <View style={calStyles.modalOverlay}>
+            <View style={calStyles.dayModal}>
+              {/* Modal Header */}
+              <View style={calStyles.dayModalHeader}>
+                <View style={calStyles.dayModalHeaderLeft}>
+                  <View style={calStyles.dayModalDateCircle}>
+                    <Text style={calStyles.dayModalDateNumber}>
+                      {selectedDay?.getDate()}
+                    </Text>
+                  </View>
+                  <View>
+                    <Text style={calStyles.dayModalWeekday}>
+                      {selectedDay?.toLocaleDateString('pt-BR', { weekday: 'long' })}
+                    </Text>
+                    <Text style={calStyles.dayModalFullDate}>
+                      {selectedDay?.toLocaleDateString('pt-BR', {
+                        day: '2-digit',
+                        month: 'long',
+                        year: 'numeric',
+                      })}
+                    </Text>
+                  </View>
+                </View>
+                <TouchableOpacity onPress={() => setShowDayModal(false)} style={calStyles.dayModalClose}>
+                  <X color={Colors.light.textSecondary} size={20} />
+                </TouchableOpacity>
+              </View>
+
+              {/* Appointments Count */}
+              <View style={calStyles.dayModalCountRow}>
+                <CalendarIcon color={Colors.light.primary} size={16} />
+                <Text style={calStyles.dayModalCountText}>
+                  {selectedDayAppointments.length === 0
+                    ? 'Nenhum compromisso'
+                    : `${selectedDayAppointments.length} compromisso${selectedDayAppointments.length > 1 ? 's' : ''}`}
+                </Text>
+              </View>
+
+              {/* Appointments List */}
+              <ScrollView style={calStyles.dayModalScroll} showsVerticalScrollIndicator={false}>
+                {selectedDayAppointments.length === 0 ? (
+                  <View style={calStyles.dayEmptyContainer}>
+                    <CalendarIcon color={Colors.light.textMuted} size={36} />
+                    <Text style={calStyles.dayEmptyText}>Nenhum compromisso agendado</Text>
+                    <Text style={{ fontSize: 13, color: Colors.light.textMuted, marginTop: 4 }}>Toque em "Novo" para adicionar</Text>
+                  </View>
+                ) : (
+                  selectedDayAppointments.map((appt) => (
+                    <View key={appt.id} style={calStyles.compactCard}>
+                      <View style={[calStyles.compactCardBar, { backgroundColor: TypeColors[appt.type] }]} />
+                      <View style={calStyles.compactCardContent}>
+                        <View style={calStyles.compactCardTop}>
+                          <Text style={calStyles.compactCardTime}>{appt.time}</Text>
+                          <View style={[calStyles.compactTypeBadge, { backgroundColor: TypeColors[appt.type] + '20' }]}>
+                            <Text style={[calStyles.compactTypeText, { color: TypeColors[appt.type] }]}>
+                              {TypeLabels[appt.type]}
+                            </Text>
+                          </View>
+                        </View>
+                        <Text style={calStyles.compactCardTitle} numberOfLines={1}>{appt.title}</Text>
+                        {appt.description && (
+                          <Text style={calStyles.compactCardSub} numberOfLines={2}>{appt.description}</Text>
+                        )}
+                        {appt.location && (
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 }}>
+                            <MapPin color={Colors.light.textMuted} size={12} />
+                            <Text style={calStyles.compactCardSub} numberOfLines={1}>{appt.location}</Text>
+                          </View>
+                        )}
+                        {appt.voterName && (
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 }}>
+                            <User color={Colors.light.textMuted} size={12} />
+                            <Text style={calStyles.compactCardSub} numberOfLines={1}>{appt.voterName}</Text>
+                          </View>
+                        )}
+                        {appt.duration && (
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 }}>
+                            <Clock color={Colors.light.textMuted} size={12} />
+                            <Text style={calStyles.compactCardSub}>{appt.duration} min</Text>
+                          </View>
+                        )}
+                        {appt.status === 'completed' && (
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 6 }}>
+                            <CheckCircle2 color={Colors.light.success} size={14} />
+                            <Text style={{ fontSize: 12, color: Colors.light.success, fontWeight: '600' }}>Concluído</Text>
+                          </View>
+                        )}
+                      </View>
+                      {appt.status !== 'completed' && (
+                        <View style={calStyles.compactActions}>
+                          <TouchableOpacity
+                            onPress={() => { setShowDayModal(false); setTimeout(() => { setSelectedAppointment(appt); setShowCompleteModal(true); }, 300); }}
+                            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                            style={calStyles.compactActionBtn}
+                          >
+                            <Check color={Colors.light.success} size={16} />
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            onPress={() => { setShowDayModal(false); setTimeout(() => handleDelete(appt.id), 300); }}
+                            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                            style={[calStyles.compactActionBtn, { backgroundColor: Colors.light.errorLight }]}
+                          >
+                            <X color={Colors.light.error} size={16} />
+                          </TouchableOpacity>
+                        </View>
+                      )}
+                    </View>
+                  ))
+                )}
+              </ScrollView>
+
+              {/* Modal Footer */}
+              <TouchableOpacity onPress={() => { setShowDayModal(false); handleAddFromCalendar(); }} style={calStyles.dayModalAddButton}>
+                <Plus color="#fff" size={18} />
+                <Text style={calStyles.dayModalAddText}>Novo Compromisso</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+        {/* List View (original) */}
+        {viewMode === 'list' && (
+          <>
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Próximos 30 dias</Text>
+              {upcomingAppointments.length === 0 ? (
+                <View style={styles.emptyContainer}>
+                  <CalendarIcon color={Colors.light.textSecondary} size={48} />
+                  <Text style={styles.emptyText}>Nenhum compromisso agendado</Text>
+                </View>
+              ) : (
+                upcomingAppointments.map((appointment) => {
+                  const appointmentDate = new Date(`${appointment.date}T${appointment.time}`);
+
+                  return (
+                    <View key={appointment.id} style={styles.appointmentCard}>
+                      <View style={styles.appointmentHeader}>
+                        <View style={styles.appointmentType}>
+                          <View
+                            style={[
+                              styles.typeBadge,
+                              { backgroundColor: TypeColors[appointment.type] },
+                            ]}
+                          />
+                          <Text style={styles.appointmentTitle}>{appointment.title}</Text>
+                        </View>
+                      </View>
+
+                      {appointment.description && (
+                        <Text style={styles.appointmentDescription}>
+                          {appointment.description}
+                        </Text>
+                      )}
+
+                      <View style={styles.appointmentDetails}>
+                        <View style={styles.detailRow}>
+                          <CalendarIcon color={Colors.light.textSecondary} size={16} />
+                          <Text style={styles.detailText}>
+                            {appointmentDate.toLocaleDateString("pt-BR", {
+                              day: "2-digit",
+                              month: "long",
+                              year: "numeric",
+                            })}
+                          </Text>
+                        </View>
+
+                        <View style={styles.detailRow}>
+                          <Clock color={Colors.light.textSecondary} size={16} />
+                          <Text style={styles.detailText}>
+                            {appointmentDate.toLocaleTimeString("pt-BR", {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                            {appointment.duration && ` (${appointment.duration} min)`}
+                          </Text>
+                        </View>
+
+                        {appointment.location && (
+                          <View style={styles.detailRow}>
+                            <MapPin color={Colors.light.textSecondary} size={16} />
+                            <Text style={styles.detailText}>{appointment.location}</Text>
+                          </View>
+                        )}
+
+                        {appointment.voterName && (
+                          <View style={styles.detailRow}>
+                            <User color={Colors.light.textSecondary} size={16} />
+                            <Text style={styles.detailText}>{appointment.voterName}</Text>
+                          </View>
+                        )}
+
+                        {appointment.reminders.length > 0 && (
+                          <View style={styles.detailRow}>
+                            <Bell color={Colors.light.textSecondary} size={16} />
+                            <Text style={styles.detailText}>
+                              {appointment.reminders.length} lembrete(s) configurado(s)
+                            </Text>
+                          </View>
+                        )}
+                      </View>
+
+                      <View style={styles.appointmentActions}>
+                        <Badge
+                          label={TypeLabels[appointment.type]}
+                          color={TypeColors[appointment.type]}
+                        />
+                        <View style={styles.actionButtons}>
+                          <TouchableOpacity
+                            style={styles.completeButton}
+                            onPress={() => {
+                              setSelectedAppointment(appointment);
+                              setShowCompleteModal(true);
+                            }}
+                          >
+                            <Check color="#10B981" size={20} />
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={styles.deleteButton}
+                            onPress={() => handleDelete(appointment.id)}
+                          >
+                            <X color="#EF4444" size={20} />
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    </View>
+                  );
+                })
+              )}
+            </View>
+
+            {appointments.filter((a) => a.status === "completed").length > 0 && (
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Concluídos</Text>
+                {appointments
+                  .filter((a) => a.status === "completed")
+                  .slice(0, 5)
+                  .map((appointment) => {
+                    const appointmentDate = new Date(`${appointment.date}T${appointment.time}`);
+
+                    return (
+                      <View key={appointment.id} style={[styles.appointmentCard, styles.completedCard]}>
+                        <View style={styles.completedHeader}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 }}>
+                            <CheckCircle2 color="#10B981" size={20} />
+                            <Text style={styles.completedTitle}>{appointment.title}</Text>
+                          </View>
+                          <TouchableOpacity
+                            onPress={() => handleDelete(appointment.id)}
+                            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                          >
+                            <X color={Colors.light.textSecondary} size={20} />
+                          </TouchableOpacity>
+                        </View>
+                        <Text style={styles.completedDate}>
+                          Concluído em{" "}
+                          {appointment.completedAt &&
+                            new Date(appointment.completedAt).toLocaleDateString("pt-BR")}
+                        </Text>
+                        {appointment.completedNotes && (
+                          <Text style={styles.completedNotes}>
+                            {appointment.completedNotes}
+                          </Text>
+                        )}
+                      </View>
+                    );
+                  })}
+              </View>
+            )}
+          </>
         )}
       </ScrollView>
 
@@ -861,9 +1242,10 @@ export default function AgendaScreen() {
         </View>
       </Modal>
 
-      {/* Alert Dialog Moderno para Exclusão */}
+      {/* Alert Dialogs Modernos */}
       {DeleteAlertDialog}
-    </View>
+      {FeedbackAlertDialog}
+    </View >
   );
 }
 
@@ -1239,5 +1621,374 @@ const styles = StyleSheet.create({
     flexDirection: "row" as const,
     gap: 12,
     marginTop: 20,
+  },
+});
+
+const calStyles = StyleSheet.create({
+  // Toggle Bar
+  toggleContainer: {
+    flexDirection: 'row' as const,
+    backgroundColor: Colors.light.backgroundTertiary,
+    borderRadius: 12,
+    padding: 4,
+    marginBottom: 16,
+  },
+  toggleButton: {
+    flex: 1,
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    gap: 6,
+    paddingVertical: 10,
+    borderRadius: 10,
+  },
+  toggleButtonActive: {
+    backgroundColor: Colors.light.primary,
+    ...Platform.select({
+      web: { boxShadow: '0 2px 8px rgba(0, 102, 204, 0.25)' },
+      ios: { shadowColor: Colors.light.primary, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.25, shadowRadius: 4 },
+      android: { elevation: 3 },
+    }),
+  },
+  toggleText: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    color: Colors.light.textSecondary,
+  },
+  toggleTextActive: {
+    color: '#FFFFFF',
+  },
+
+  // Calendar Container
+  calendarContainer: {
+    backgroundColor: Colors.light.card,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 24,
+    ...Platform.select({
+      web: { boxShadow: '0 2px 12px rgba(0, 0, 0, 0.08)' },
+      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 8 },
+      android: { elevation: 2 },
+    }),
+  },
+
+  // Month Navigation
+  monthNav: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'space-between' as const,
+    marginBottom: 16,
+  },
+  navArrow: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    backgroundColor: Colors.light.backgroundTertiary,
+  },
+  monthTitleContainer: {
+    alignItems: 'center' as const,
+  },
+  monthTitle: {
+    fontSize: 18,
+    fontWeight: '700' as const,
+    color: Colors.light.text,
+  },
+
+  // Weekday Headers
+  weekdayRow: {
+    flexDirection: 'row' as const,
+    marginBottom: 8,
+  },
+  weekdayCell: {
+    flex: 1,
+    alignItems: 'center' as const,
+    paddingVertical: 4,
+  },
+  weekdayText: {
+    fontSize: 12,
+    fontWeight: '600' as const,
+    color: Colors.light.textSecondary,
+    textTransform: 'uppercase' as const,
+  },
+
+  // Days Grid
+  daysGrid: {
+    flexDirection: 'row' as const,
+    flexWrap: 'wrap' as const,
+  },
+  dayCell: {
+    width: '14.285%' as any,
+    minHeight: 80,
+    alignItems: 'center' as const,
+    paddingTop: 4,
+    paddingHorizontal: 1,
+    borderRadius: 8,
+  },
+  dayCellSelected: {
+    backgroundColor: Colors.light.primaryLight,
+  },
+  dayNumberContainer: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+  },
+  todayCircle: {
+    backgroundColor: Colors.light.primary,
+  },
+  dayNumber: {
+    fontSize: 14,
+    fontWeight: '500' as const,
+    color: Colors.light.text,
+  },
+  dayNumberOutside: {
+    color: Colors.light.textMuted,
+    opacity: 0.4,
+  },
+  dayNumberToday: {
+    color: '#FFFFFF',
+    fontWeight: '700' as const,
+  },
+
+  // Event Labels
+  eventLabelsContainer: {
+    width: '100%',
+    paddingHorizontal: 2,
+    marginTop: 2,
+    gap: 2,
+  },
+  eventLabel: {
+    borderRadius: 4,
+    paddingHorizontal: 4,
+    paddingVertical: 1,
+  },
+  eventLabelText: {
+    fontSize: 9,
+    fontWeight: '600' as const,
+    color: '#FFFFFF',
+  },
+  eventOverflow: {
+    fontSize: 9,
+    color: Colors.light.textMuted,
+    fontWeight: '600' as const,
+    textAlign: 'center' as const,
+    marginTop: 1,
+  },
+
+  // Day Detail Panel
+  dayDetailPanel: {
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: Colors.light.border,
+  },
+  dayDetailHeader: {
+    flexDirection: 'row' as const,
+    justifyContent: 'space-between' as const,
+    alignItems: 'center' as const,
+    marginBottom: 12,
+  },
+  dayDetailTitle: {
+    fontSize: 15,
+    fontWeight: '600' as const,
+    color: Colors.light.text,
+    textTransform: 'capitalize' as const,
+    flex: 1,
+  },
+  dayAddButton: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: 4,
+    backgroundColor: Colors.light.primary,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  dayAddText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '600' as const,
+  },
+  dayEmptyContainer: {
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    paddingVertical: 24,
+    gap: 8,
+  },
+  dayEmptyText: {
+    fontSize: 14,
+    color: Colors.light.textMuted,
+  },
+
+  // Compact Appointment Cards
+  compactCard: {
+    flexDirection: 'row' as const,
+    backgroundColor: Colors.light.backgroundSecondary,
+    borderRadius: 10,
+    marginBottom: 8,
+    overflow: 'hidden' as const,
+  },
+  compactCardBar: {
+    width: 4,
+  },
+  compactCardContent: {
+    flex: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+  },
+  compactCardTop: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'space-between' as const,
+    marginBottom: 4,
+  },
+  compactCardTime: {
+    fontSize: 13,
+    fontWeight: '700' as const,
+    color: Colors.light.primary,
+  },
+  compactTypeBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  compactTypeText: {
+    fontSize: 10,
+    fontWeight: '600' as const,
+  },
+  compactCardTitle: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    color: Colors.light.text,
+  },
+  compactCardSub: {
+    fontSize: 12,
+    color: Colors.light.textMuted,
+  },
+  compactActions: {
+    justifyContent: 'center' as const,
+    alignItems: 'center' as const,
+    gap: 8,
+    paddingHorizontal: 10,
+  },
+  compactActionBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: Colors.light.successLight,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+  },
+
+  // Modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center' as const,
+    alignItems: 'center' as const,
+    padding: 20,
+  },
+  dayModal: {
+    backgroundColor: Colors.light.background,
+    borderRadius: 20,
+    width: '100%' as any,
+    maxWidth: 480,
+    maxHeight: '80%' as any,
+    overflow: 'hidden' as const,
+    ...Platform.select({
+      web: { boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)' },
+      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 12 }, shadowOpacity: 0.25, shadowRadius: 24 },
+      android: { elevation: 12 },
+    }),
+  },
+  dayModalHeader: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'space-between' as const,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 12,
+  },
+  dayModalHeaderLeft: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: 12,
+    flex: 1,
+  },
+  dayModalDateCircle: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: Colors.light.primary,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+  },
+  dayModalDateNumber: {
+    fontSize: 20,
+    fontWeight: '700' as const,
+    color: '#FFFFFF',
+  },
+  dayModalWeekday: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+    color: Colors.light.text,
+    textTransform: 'capitalize' as const,
+  },
+  dayModalFullDate: {
+    fontSize: 13,
+    color: Colors.light.textSecondary,
+    textTransform: 'capitalize' as const,
+  },
+  dayModalClose: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: Colors.light.backgroundTertiary,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+  },
+  dayModalCountRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: 8,
+    paddingHorizontal: 20,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.light.border,
+  },
+  dayModalCountText: {
+    fontSize: 14,
+    fontWeight: '500' as const,
+    color: Colors.light.primary,
+  },
+  dayModalScroll: {
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    maxHeight: 340,
+  },
+  dayModalAddButton: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    gap: 8,
+    backgroundColor: Colors.light.primary,
+    marginHorizontal: 20,
+    marginBottom: 20,
+    marginTop: 12,
+    paddingVertical: 12,
+    borderRadius: 12,
+    ...Platform.select({
+      web: { boxShadow: '0 4px 12px rgba(0, 102, 204, 0.3)' },
+      ios: { shadowColor: Colors.light.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8 },
+      android: { elevation: 4 },
+    }),
+  },
+  dayModalAddText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '600' as const,
   },
 });
