@@ -1295,13 +1295,6 @@ export default function ElectionAnalysisScreen() {
                                                 {city.percentage}%
                                             </Text>
                                         </View>
-                                        {/* Líder da cidade */}
-                                        <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4, paddingLeft: 36 }}>
-                                            <Trophy color="#F59E0B" size={12} />
-                                            <Text style={{ fontSize: 11, color: '#6B7280', marginLeft: 4 }} numberOfLines={1}>
-                                                Líder: {city.topCandidate.name} ({city.topCandidate.party}) — {formatNumber(city.topCandidate.votes)}
-                                            </Text>
-                                        </View>
                                     </TouchableOpacity>
                                 );
                             })}
@@ -1376,20 +1369,6 @@ export default function ElectionAnalysisScreen() {
                                                         Seções
                                                     </Text>
                                                 </View>
-                                                {cityDetails.adelmoPosition && (
-                                                    <View style={{
-                                                        flex: 1, minWidth: 100, padding: 14,
-                                                        backgroundColor: '#8B5CF610', borderRadius: 12,
-                                                        borderWidth: 1, borderColor: '#8B5CF625',
-                                                    }}>
-                                                        <Text style={{ fontSize: 20, fontWeight: '800', color: '#8B5CF6' }}>
-                                                            {cityDetails.adelmoPosition}º
-                                                        </Text>
-                                                        <Text style={{ fontSize: 11, color: '#6B7280', marginTop: 2 }}>
-                                                            Posição Adelmo
-                                                        </Text>
-                                                    </View>
-                                                )}
                                             </View>
 
                                             {/* Evolução 2018 vs 2022 */}
@@ -1437,110 +1416,7 @@ export default function ElectionAnalysisScreen() {
                                                 </View>
                                             )}
 
-                                            {/* Ranking de Candidatos */}
-                                            {cityDetails.ranking && cityDetails.ranking.length > 0 && (
-                                                <View style={{ marginBottom: 20 }}>
-                                                    <Text style={{ fontSize: 14, fontWeight: '700', color: '#1F2937', marginBottom: 12 }}>
-                                                        🏆 Ranking de Candidatos na Cidade
-                                                    </Text>
-                                                    {cityDetails.ranking.map((cand: any, idx: number) => {
-                                                        const isAdelmo = cand.name === 'ADELMO SOARES';
-                                                        const medalColors = ['#FFD700', '#C0C0C0', '#CD7F32'];
-                                                        const maxVotes = cityDetails.ranking[0]?.totalVotes || 1;
-                                                        const barWidth = (cand.totalVotes / maxVotes) * 100;
-                                                        return (
-                                                            <View key={cand.number} style={{
-                                                                paddingVertical: 10,
-                                                                paddingHorizontal: 12,
-                                                                borderRadius: 10,
-                                                                marginBottom: 6,
-                                                                backgroundColor: isAdelmo ? '#FF6B0008' : (idx % 2 === 0 ? '#F9FAFB' : 'transparent'),
-                                                                borderWidth: isAdelmo ? 1 : 0,
-                                                                borderColor: isAdelmo ? '#FF6B0025' : 'transparent',
-                                                            }}>
-                                                                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
-                                                                    <View style={{
-                                                                        width: 24, height: 24, borderRadius: 12,
-                                                                        backgroundColor: idx < 3 ? medalColors[idx] : '#E5E7EB',
-                                                                        alignItems: 'center', justifyContent: 'center',
-                                                                        marginRight: 10,
-                                                                    }}>
-                                                                        <Text style={{
-                                                                            fontSize: 11, fontWeight: '700',
-                                                                            color: idx < 3 ? '#FFFFFF' : '#6B7280',
-                                                                        }}>{cand.rank}</Text>
-                                                                    </View>
-                                                                    <View style={{ flex: 1 }}>
-                                                                        <Text style={{
-                                                                            fontSize: 13,
-                                                                            fontWeight: isAdelmo ? '700' : '500',
-                                                                            color: isAdelmo ? '#FF6B00' : '#374151',
-                                                                        }} numberOfLines={1}>
-                                                                            {cand.name} {isAdelmo ? '⭐' : ''}
-                                                                        </Text>
-                                                                    </View>
-                                                                    <View style={{
-                                                                        backgroundColor: (getPartyColor(cand.party)) + '15',
-                                                                        paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8,
-                                                                        marginRight: 8,
-                                                                    }}>
-                                                                        <Text style={{
-                                                                            fontSize: 10, fontWeight: '600',
-                                                                            color: getPartyColor(cand.party),
-                                                                        }}>{cand.party}</Text>
-                                                                    </View>
-                                                                    <Text style={{
-                                                                        fontSize: 13, fontWeight: '700',
-                                                                        color: isAdelmo ? '#FF6B00' : '#374151',
-                                                                    }}>
-                                                                        {formatNumber(cand.totalVotes)}
-                                                                    </Text>
-                                                                </View>
-                                                                <View style={{
-                                                                    height: 5, backgroundColor: '#F3F4F6',
-                                                                    borderRadius: 3, overflow: 'hidden', marginLeft: 34,
-                                                                }}>
-                                                                    <View style={{
-                                                                        height: '100%', width: `${barWidth}%`,
-                                                                        backgroundColor: isAdelmo ? '#FF6B00' : getPartyColor(cand.party),
-                                                                        borderRadius: 3,
-                                                                    }} />
-                                                                </View>
-                                                            </View>
-                                                        );
-                                                    })}
-                                                </View>
-                                            )}
 
-                                            {/* Distribuição por Partido */}
-                                            {cityDetails.partyDistribution && cityDetails.partyDistribution.length > 0 && (
-                                                <View style={{ marginBottom: 20 }}>
-                                                    <Text style={{ fontSize: 14, fontWeight: '700', color: '#1F2937', marginBottom: 12 }}>
-                                                        🏛️ Distribuição por Partido
-                                                    </Text>
-                                                    <View style={{
-                                                        flexDirection: 'row', flexWrap: 'wrap', gap: 8,
-                                                    }}>
-                                                        {cityDetails.partyDistribution.map((p: any) => (
-                                                            <View key={p.party} style={{
-                                                                paddingHorizontal: 12, paddingVertical: 8,
-                                                                borderRadius: 10,
-                                                                backgroundColor: getPartyColor(p.party) + '12',
-                                                                borderWidth: 1,
-                                                                borderColor: getPartyColor(p.party) + '30',
-                                                            }}>
-                                                                <Text style={{
-                                                                    fontSize: 12, fontWeight: '700',
-                                                                    color: getPartyColor(p.party),
-                                                                }}>{p.party}</Text>
-                                                                <Text style={{
-                                                                    fontSize: 11, color: '#6B7280', marginTop: 1,
-                                                                }}>{formatNumber(p.votes)} • {p.percentage}%</Text>
-                                                            </View>
-                                                        ))}
-                                                    </View>
-                                                </View>
-                                            )}
 
                                             {/* Breakdown por Zona */}
                                             {cityDetails.zoneBreakdown && cityDetails.zoneBreakdown.length > 0 && (

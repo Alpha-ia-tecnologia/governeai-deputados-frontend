@@ -3,6 +3,7 @@
  * Adelmo Soares: 2018 (PCdoB/65555, 43.974 votos, ELEITO) | 2022 (PSB/40000, 34.348 votos, 2º Suplente)
  * Fonte: Tribunal Superior Eleitoral (TSE) — resultados oficiais
  */
+import { ADELMO_CITIES_2022, ADELMO_CITIES_2018, ADELMO_CITY_COMPARISON } from './adelmoCityData';
 
 export function isDeputadoPosition(position: string | null | undefined): boolean {
     if (!position) return true; // Default: always treat as deputado for this platform
@@ -288,215 +289,73 @@ export interface MockCityData {
     zonesCount: number;
     sectionsCount: number;
     percentage: string;
-    topCandidate: { name: string; party: string; votes: number };
-}
-
-const ADELMO_CITIES_2022 = [
-    // Fonte: TSE — votacao_secao_2022_MA.csv (dados oficiais)
-    { name: 'CAXIAS', votes: 8978 },
-    { name: 'ROSÁRIO', votes: 3134 },
-    { name: 'ALDEIAS ALTAS', votes: 2273 },
-    { name: 'AFONSO CUNHA', votes: 2219 },
-    { name: 'ESPERANTINÓPOLIS', votes: 2070 },
-    { name: 'SÃO LUÍS', votes: 2069 },
-    { name: 'JOSELÂNDIA', votes: 978 },
-    { name: 'MAGALHÃES DE ALMEIDA', votes: 967 },
-    { name: 'DUQUE BACELAR', votes: 833 },
-    { name: 'PARAIBANO', votes: 726 },
-    { name: 'CANTANHEDE', votes: 662 },
-    { name: 'FORTUNA', votes: 658 },
-    { name: 'RAPOSA', votes: 642 },
-    { name: 'SÃO JOÃO DO SOTER', votes: 640 },
-    { name: 'ARAIOSES', votes: 445 },
-    { name: 'CODÓ', votes: 405 },
-    { name: 'SÃO JOSÉ DE RIBAMAR', votes: 357 },
-    { name: 'PAÇO DO LUMIAR', votes: 355 },
-    { name: 'COLINAS', votes: 293 },
-    { name: 'PARNARAMA', votes: 292 },
-];
-
-const ADELMO_CITIES_2018 = [
-    // Fonte: TSE — votacao_secao_2018_MA.csv (dados oficiais)
-    { name: 'LAGO DA PEDRA', votes: 4346 },
-    { name: 'ALDEIAS ALTAS', votes: 4031 },
-    { name: 'CAXIAS', votes: 3485 },
-    { name: 'LAGOA GRANDE DO MARANHÃO', votes: 2279 },
-    { name: 'DUQUE BACELAR', votes: 2221 },
-    { name: 'CANTANHEDE', votes: 1682 },
-    { name: 'CODÓ', votes: 1558 },
-    { name: 'SÃO LUÍS', votes: 1476 },
-    { name: 'BARREIRINHAS', votes: 1018 },
-    { name: 'COELHO NETO', votes: 854 },
-    { name: 'COLINAS', votes: 819 },
-    { name: 'PARAIBANO', votes: 767 },
-    { name: 'RIBAMAR FIQUENE', votes: 673 },
-    { name: 'ALTO ALEGRE DO MARANHÃO', votes: 667 },
-    { name: 'CHAPADINHA', votes: 591 },
-    { name: 'PERITORÓ', votes: 584 },
-    { name: 'ARAIOSES', votes: 558 },
-    { name: 'ITAPECURU MIRIM', votes: 503 },
-    { name: 'SANTO AMARO DO MARANHÃO', votes: 488 },
-    { name: 'SANTA QUITÉRIA DO MARANHÃO', votes: 456 },
-];
-
-function getAdelmoCities() {
-    return selectedYear === 2018 ? ADELMO_CITIES_2018 : ADELMO_CITIES_2022;
-}
-
-// Simple deterministic hash for consistent "random" per city+candidate
-function seededValue(cityName: string, candidateName: string, seed: number = 0): number {
-    let hash = seed;
-    const str = cityName + candidateName;
-    for (let i = 0; i < str.length; i++) {
-        hash = ((hash << 5) - hash + str.charCodeAt(i)) | 0;
-    }
-    return (Math.abs(hash) % 1000) / 1000; // 0..1 deterministic
-}
-
-// Estimate a candidate's votes in a city based on their statewide proportion
-function estimateCityVotes(
-    candidateName: string, candidateTotalVotes: number,
-    cityName: string, cityAdelmoVotes: number,
-    allCandidatesTotalVotes: number
-): number {
-    // Estimate total votes in city (the city has many candidates beyond the top ones)
-    // Use a multiplier relative to city size
-    const citySize = cityAdelmoVotes > 5000 ? 15 : cityAdelmoVotes > 1000 ? 12 : 8;
-    const estimatedCityTotal = cityAdelmoVotes * citySize;
-
-    // Base proportion from statewide results
-    const statewideShare = candidateTotalVotes / allCandidatesTotalVotes;
-
-    // Add deterministic variation per city+candidate (±30%)
-    const variation = 0.7 + seededValue(cityName, candidateName) * 0.6;
-
-    return Math.floor(estimatedCityTotal * statewideShare * variation);
 }
 
 export function getMockDeputadoCityData(): MockCityData[] {
-    const cities = getAdelmoCities();
+    const is2018 = selectedYear === 2018;
+    const cities = is2018 ? ADELMO_CITIES_2018 : ADELMO_CITIES_2022;
     const total = cities.reduce((s, c) => s + c.votes, 0);
-    const candidates = getActiveCandidates();
-    const allTotal = candidates.reduce((s, c) => s + c.totalVotes, 0);
-    const sorted = [...candidates].sort((a, b) => b.totalVotes - a.totalVotes);
 
     return cities.map(c => {
-        // Find the actual leader in this city (highest estimated votes)
-        let leaderCandidate = sorted[0];
-        let leaderVotes = 0;
-
-        for (const cand of sorted.slice(0, 15)) {
-            const estVotes = cand.name === 'ADELMO SOARES'
-                ? c.votes
-                : estimateCityVotes(cand.name, cand.totalVotes, c.name, c.votes, allTotal);
-            if (estVotes > leaderVotes) {
-                leaderVotes = estVotes;
-                leaderCandidate = cand;
-            }
-        }
-
         return {
-            city: c.name, state: 'MA', totalVotes: c.votes,
-            zonesCount: Math.max(1, Math.floor(c.votes / 500)),
-            sectionsCount: Math.max(2, Math.floor(c.votes / 100)),
-            percentage: ((c.votes / total) * 100).toFixed(2),
-            topCandidate: {
-                name: leaderCandidate.name,
-                party: leaderCandidate.party,
-                votes: leaderCandidate.name === 'ADELMO SOARES' ? c.votes : leaderVotes,
-            },
+            city: c.name,
+            state: 'MA',
+            totalVotes: c.votes,
+            zonesCount: c.zones,
+            sectionsCount: c.sections,
+            percentage: ((c.votes / total) * 100).toFixed(2)
         };
-    });
+    }).sort((a, b) => b.totalVotes - a.totalVotes);
 }
 
 export function getMockDeputadoCityDetails(cityName: string) {
-    const cities = getAdelmoCities();
+    const is2018 = selectedYear === 2018;
+    const cities = is2018 ? ADELMO_CITIES_2018 : ADELMO_CITIES_2022;
     const city = cities.find(c => c.name === cityName);
     if (!city) return null;
 
-    const zonesCount = Math.max(1, Math.floor(city.votes / 500));
-    const sectionsCount = Math.max(2, Math.floor(city.votes / 100));
+    const comp = ADELMO_CITY_COMPARISON.find(c => c.name === cityName);
 
-    // Generate realistic ranking based on statewide proportional distribution
-    const candidates = getActiveCandidates();
-    const allTotal = candidates.reduce((s, c) => s + c.totalVotes, 0);
-    const sorted = [...candidates].sort((a, b) => b.totalVotes - a.totalVotes);
-
-    // Estimate city total votes (all candidates combined)
-    const citySize = city.votes > 5000 ? 15 : city.votes > 1000 ? 12 : 8;
-    const cityTotalAllCandidates = city.votes * citySize;
-
-    // Build ranking: top 10 statewide + guarantee Adelmo is included
-    const topCandidates = sorted.slice(0, 10);
-    const adelmo = candidates.find(c => c.name === 'ADELMO SOARES');
-    const adelmoInTop = topCandidates.some(c => c.name === 'ADELMO SOARES');
-    if (adelmo && !adelmoInTop) {
-        topCandidates.pop(); // remove last
-        topCandidates.push(adelmo); // add Adelmo
-    }
-
-    const ranking = topCandidates.map(c => {
-        const votes = c.name === 'ADELMO SOARES'
-            ? city.votes
-            : estimateCityVotes(c.name, c.totalVotes, city.name, city.votes, allTotal);
-        return {
-            rank: 0, number: c.number, name: c.name, party: c.party,
-            partyName: c.partyName, totalVotes: votes,
-            percentage: ((votes / cityTotalAllCandidates) * 100).toFixed(1),
-        };
-    }).sort((a, b) => b.totalVotes - a.totalVotes).map((c, i) => ({ ...c, rank: i + 1 }));
-
-    // Zone breakdown within the city
+    // Zone breakdown within the city (use basic mock proportional to total relative sections if needed)
+    const zonesCount = city.zones || 1;
+    const sectionsCount = city.sections || 1;
     const zoneBreakdown = Array.from({ length: zonesCount }, (_, i) => {
-        const zoneVotes = Math.floor(city.votes / zonesCount * (0.6 + Math.random() * 0.8));
-        const zoneSections = Math.max(2, Math.floor(sectionsCount / zonesCount));
+        const zoneVotes = Math.floor(city.votes / zonesCount);
+        const zoneSections = Math.floor(sectionsCount / zonesCount);
         return {
             zone: i + 1, totalVotes: zoneVotes, sectionsCount: zoneSections,
-            adelmoVotes: Math.floor(zoneVotes * (0.2 + Math.random() * 0.3)),
+            adelmoVotes: zoneVotes,
         };
     });
 
     // Evolution 2018 vs 2022
-    const otherYear = selectedYear === 2022 ? ADELMO_CITIES_2018 : ADELMO_CITIES_2022;
-    const otherCity = otherYear.find(c => c.name === cityName);
     const evolution = {
         currentYear: selectedYear,
         currentVotes: city.votes,
-        previousYear: selectedYear === 2022 ? 2018 : 2022,
-        previousVotes: otherCity?.votes || 0,
-        difference: city.votes - (otherCity?.votes || 0),
-        percentChange: otherCity?.votes
-            ? (((city.votes - otherCity.votes) / otherCity.votes) * 100).toFixed(1)
-            : 'N/A',
-        trend: city.votes > (otherCity?.votes || 0) ? 'up' : city.votes < (otherCity?.votes || 0) ? 'down' : 'stable',
+        previousYear: is2018 ? 2022 : 2018,
+        previousVotes: is2018 ? (comp?.votes2022 || 0) : (comp?.votes2018 || 0),
+        difference: is2018 ? (comp?.votes2018 || 0) - (comp?.votes2022 || 0) : (comp?.votes2022 || 0) - (comp?.votes2018 || 0),
+        percentChange: comp?.varPct ? comp.varPct.toFixed(1) : '0.0',
+        trend: is2018
+            ? ((comp?.votes2018 || 0) > (comp?.votes2022 || 0) ? 'up' : 'down')
+            : ((comp?.votes2022 || 0) > (comp?.votes2018 || 0) ? 'up' : 'down'),
     };
-
-    // Party distribution in the city
-    const partyMap = new Map<string, number>();
-    ranking.forEach(r => {
-        partyMap.set(r.party, (partyMap.get(r.party) || 0) + r.totalVotes);
-    });
-    const partyDistribution = Array.from(partyMap.entries())
-        .map(([party, votes]) => ({ party, votes, percentage: ((votes / cityTotalAllCandidates) * 100).toFixed(1) }))
-        .sort((a, b) => b.votes - a.votes);
 
     return {
         city: city.name, state: 'MA', totalVotes: city.votes,
-        totalAllCandidates: cityTotalAllCandidates,
+        totalAllCandidates: city.votes,
         zonesCount, sectionsCount,
-        ranking,
         zoneBreakdown,
         evolution,
-        partyDistribution,
-        adelmoPosition: ranking.findIndex(r => r.name === 'ADELMO SOARES') + 1,
-        adelmoPercentage: ((city.votes / cityTotalAllCandidates) * 100).toFixed(1),
+        adelmoPercentage: '100.0',
     };
 }
 
 export function getMockDeputadoVotesByCity(candidateNumber: string) {
     const adelmoNum = getAdelmoNumber();
     if (candidateNumber === adelmoNum) {
-        return getAdelmoCities().map(c => ({ city: c.name, state: 'MA', votes: c.votes }));
+        const cities = selectedYear === 2018 ? ADELMO_CITIES_2018 : ADELMO_CITIES_2022;
+        return cities.map(c => ({ city: c.name, state: 'MA', votes: c.votes }));
     }
     return [];
 }
@@ -671,7 +530,7 @@ export function calculateProjection(candidateNumber: string, adjustments: Record
     const adelmoNum = getAdelmoNumber();
     const isAdelmo = candidateNumber === adelmoNum;
     const baseCities = isAdelmo
-        ? getAdelmoCities()
+        ? (selectedYear === 2018 ? ADELMO_CITIES_2018 : ADELMO_CITIES_2022)
         : ADELMO_CITIES_2022.map(c => ({
             name: c.name,
             votes: Math.floor(c.votes * (candidate.totalVotes / 34348)),
