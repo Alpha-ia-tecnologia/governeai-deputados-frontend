@@ -343,26 +343,56 @@ function getAdelmoCities() {
     return selectedYear === 2018 ? ADELMO_CITIES_2018 : ADELMO_CITIES_2022;
 }
 
+// Simple deterministic hash for consistent "random" per city+candidate
+function seededValue(cityName: string, candidateName: string, seed: number = 0): number {
+    let hash = seed;
+    const str = cityName + candidateName;
+    for (let i = 0; i < str.length; i++) {
+        hash = ((hash << 5) - hash + str.charCodeAt(i)) | 0;
+    }
+    return (Math.abs(hash) % 1000) / 1000; // 0..1 deterministic
+}
+
+// Estimate a candidate's votes in a city based on their statewide proportion
+function estimateCityVotes(
+    candidateName: string, candidateTotalVotes: number,
+    cityName: string, cityAdelmoVotes: number,
+    allCandidatesTotalVotes: number
+): number {
+    // Estimate total votes in city (the city has many candidates beyond the top ones)
+    // Use a multiplier relative to city size
+    const citySize = cityAdelmoVotes > 5000 ? 15 : cityAdelmoVotes > 1000 ? 12 : 8;
+    const estimatedCityTotal = cityAdelmoVotes * citySize;
+
+    // Base proportion from statewide results
+    const statewideShare = candidateTotalVotes / allCandidatesTotalVotes;
+
+    // Add deterministic variation per city+candidate (±30%)
+    const variation = 0.7 + seededValue(cityName, candidateName) * 0.6;
+
+    return Math.floor(estimatedCityTotal * statewideShare * variation);
+}
+
 export function getMockDeputadoCityData(): MockCityData[] {
     const cities = getAdelmoCities();
     const total = cities.reduce((s, c) => s + c.votes, 0);
     const candidates = getActiveCandidates();
+    const allTotal = candidates.reduce((s, c) => s + c.totalVotes, 0);
     const sorted = [...candidates].sort((a, b) => b.totalVotes - a.totalVotes);
-    const adelmoParty = selectedYear === 2018 ? 'PCdoB' : 'PSB';
 
-    return cities.map((c, index) => {
-        // Only in Adelmo's top 2 cities he's likely the actual leader
-        // In other cities, the overall top candidates lead
-        let topCandidate: { name: string; party: string; votes: number };
+    return cities.map(c => {
+        // Find the actual leader in this city (highest estimated votes)
+        let leaderCandidate = sorted[0];
+        let leaderVotes = 0;
 
-        if (index < 2) {
-            // Adelmo's strongest cities — he leads
-            topCandidate = { name: 'ADELMO SOARES', party: adelmoParty, votes: c.votes };
-        } else {
-            // Other cities — a top-ranked state candidate leads with more votes
-            const leader = sorted[index % sorted.length];
-            const leaderVotes = Math.floor(c.votes * (1.2 + Math.random() * 1.5));
-            topCandidate = { name: leader.name, party: leader.party, votes: leaderVotes };
+        for (const cand of sorted.slice(0, 15)) {
+            const estVotes = cand.name === 'ADELMO SOARES'
+                ? c.votes
+                : estimateCityVotes(cand.name, cand.totalVotes, c.name, c.votes, allTotal);
+            if (estVotes > leaderVotes) {
+                leaderVotes = estVotes;
+                leaderCandidate = cand;
+            }
         }
 
         return {
@@ -370,7 +400,11 @@ export function getMockDeputadoCityData(): MockCityData[] {
             zonesCount: Math.max(1, Math.floor(c.votes / 500)),
             sectionsCount: Math.max(2, Math.floor(c.votes / 100)),
             percentage: ((c.votes / total) * 100).toFixed(2),
-            topCandidate,
+            topCandidate: {
+                name: leaderCandidate.name,
+                party: leaderCandidate.party,
+                votes: leaderCandidate.name === 'ADELMO SOARES' ? c.votes : leaderVotes,
+            },
         };
     });
 }
@@ -380,27 +414,33 @@ export function getMockDeputadoCityDetails(cityName: string) {
     const city = cities.find(c => c.name === cityName);
     if (!city) return null;
 
-    const adelmoParty = selectedYear === 2018 ? 'PCdoB' : 'PSB';
     const zonesCount = Math.max(1, Math.floor(city.votes / 500));
     const sectionsCount = Math.max(2, Math.floor(city.votes / 100));
 
-    // Generate realistic competitor ranking for this city
+    // Generate realistic ranking based on statewide proportional distribution
     const candidates = getActiveCandidates();
+    const allTotal = candidates.reduce((s, c) => s + c.totalVotes, 0);
     const sorted = [...candidates].sort((a, b) => b.totalVotes - a.totalVotes);
 
-    // Distribute votes proportionally among top candidates for this city
-    const cityTotalAllCandidates = Math.floor(city.votes * 3.5); // total votes in city ~ 3.5x Adelmo's
-    const ranking = sorted.slice(0, 10).map((c, idx) => {
-        let votes: number;
-        if (c.name === 'ADELMO SOARES') {
-            votes = city.votes;
-        } else {
-            // Proportional decrease based on ranking 
-            const factor = Math.max(0.05, 1 - (idx * 0.12) + (Math.random() * 0.15 - 0.075));
-            votes = Math.floor(city.votes * factor * (0.4 + Math.random() * 0.3));
-        }
+    // Estimate city total votes (all candidates combined)
+    const citySize = city.votes > 5000 ? 15 : city.votes > 1000 ? 12 : 8;
+    const cityTotalAllCandidates = city.votes * citySize;
+
+    // Build ranking: top 10 statewide + guarantee Adelmo is included
+    const topCandidates = sorted.slice(0, 10);
+    const adelmo = candidates.find(c => c.name === 'ADELMO SOARES');
+    const adelmoInTop = topCandidates.some(c => c.name === 'ADELMO SOARES');
+    if (adelmo && !adelmoInTop) {
+        topCandidates.pop(); // remove last
+        topCandidates.push(adelmo); // add Adelmo
+    }
+
+    const ranking = topCandidates.map(c => {
+        const votes = c.name === 'ADELMO SOARES'
+            ? city.votes
+            : estimateCityVotes(c.name, c.totalVotes, city.name, city.votes, allTotal);
         return {
-            rank: idx + 1, number: c.number, name: c.name, party: c.party,
+            rank: 0, number: c.number, name: c.name, party: c.party,
             partyName: c.partyName, totalVotes: votes,
             percentage: ((votes / cityTotalAllCandidates) * 100).toFixed(1),
         };
