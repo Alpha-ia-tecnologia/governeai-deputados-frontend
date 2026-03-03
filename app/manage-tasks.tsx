@@ -54,6 +54,8 @@ export default function ManageTasksScreen() {
     const [status, setStatus] = useState<TaskStatus>("pendente");
     const [dueDate, setDueDate] = useState("");
     const [taskColor, setTaskColor] = useState("");
+    const [draggingTaskId, setDraggingTaskId] = useState<string | null>(null);
+    const [dragOverColumn, setDragOverColumn] = useState<TaskStatus | null>(null);
 
     const resetForm = () => { setTitle(""); setDescription(""); setAssigneeId(""); setPriority("media"); setStatus("pendente"); setDueDate(""); setTaskColor(""); setEditing(null); };
     const openAdd = (forStatus?: TaskStatus) => { resetForm(); if (forStatus) setStatus(forStatus); setShowModal(true); };
@@ -122,6 +124,44 @@ export default function ManageTasksScreen() {
         return map;
     }, [gabineteTasks, search]);
 
+    // ── Drag & Drop (web only) ──
+    const isWeb = Platform.OS === 'web';
+
+    const handleDragStart = (taskId: string) => (e: any) => {
+        setDraggingTaskId(taskId);
+        if (e.dataTransfer) {
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', taskId);
+        }
+    };
+
+    const handleDragEnd = () => {
+        setDraggingTaskId(null);
+        setDragOverColumn(null);
+    };
+
+    const handleDragOver = (statusKey: TaskStatus) => (e: any) => {
+        e.preventDefault();
+        if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+        setDragOverColumn(statusKey);
+    };
+
+    const handleDragLeave = () => {
+        setDragOverColumn(null);
+    };
+
+    const handleDrop = (targetStatus: TaskStatus) => async (e: any) => {
+        e.preventDefault();
+        setDragOverColumn(null);
+        const taskId = draggingTaskId || (e.dataTransfer && e.dataTransfer.getData('text/plain'));
+        if (!taskId) return;
+        const task = gabineteTasks.find(t => t.id === taskId);
+        if (task && task.status !== targetStatus) {
+            await quickStatus(task, targetStatus);
+        }
+        setDraggingTaskId(null);
+    };
+
     // ── Kanban Card ──
     const renderKanbanCard = (t: GabineteTask) => {
         const pc = PRIO_CFG[t.priority];
@@ -129,9 +169,10 @@ export default function ManageTasksScreen() {
         const currentIdx = STATUS_ORDER.indexOf(t.status);
         const canGoLeft = currentIdx > 0;
         const canGoRight = currentIdx < STATUS_ORDER.length - 1;
+        const isDragging = draggingTaskId === t.id;
 
-        return (
-            <View key={t.id} style={[k.card, { backgroundColor: colors.card }]}>
+        const cardContent = (
+            <View key={t.id} style={[k.card, { backgroundColor: colors.card, opacity: isDragging ? 0.5 : 1 }]}>
                 <View style={[k.cardStripe, { backgroundColor: cardColor }]} />
                 <View style={k.cardBody}>
                     <TouchableOpacity onPress={() => openEdit(t)} activeOpacity={0.7}>
@@ -187,6 +228,22 @@ export default function ManageTasksScreen() {
                 </View>
             </View>
         );
+
+        // Wrap with draggable div on web
+        if (isWeb) {
+            return (
+                <div
+                    key={t.id}
+                    draggable
+                    onDragStart={handleDragStart(t.id)}
+                    onDragEnd={handleDragEnd}
+                    style={{ cursor: 'grab' }}
+                >
+                    {cardContent}
+                </div>
+            );
+        }
+        return cardContent;
     };
 
     // ── Kanban Column ──
@@ -194,9 +251,14 @@ export default function ManageTasksScreen() {
         const cfg = STATUS_CFG[statusKey];
         const tasks = tasksByStatus[statusKey];
         const Icon = cfg.icon;
+        const isDragOver = dragOverColumn === statusKey;
 
-        return (
-            <View key={statusKey} style={[k.column, { backgroundColor: colors.backgroundSecondary }]}>
+        const columnContent = (
+            <View key={statusKey} style={[
+                k.column,
+                { backgroundColor: colors.backgroundSecondary },
+                isDragOver && { backgroundColor: cfg.color + '12', borderColor: cfg.color, borderWidth: 2, borderStyle: 'dashed' as any },
+            ]}>
                 <View style={k.columnHeader}>
                     <View style={[k.columnDot, { backgroundColor: cfg.color }]} />
                     <Icon color={cfg.color} size={16} />
@@ -212,12 +274,30 @@ export default function ManageTasksScreen() {
                 <ScrollView style={k.columnScroll} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 16 }}>
                     {tasks.length === 0 ? (
                         <View style={k.columnEmpty}>
-                            <Text style={{ color: colors.textSecondary, fontSize: 12, textAlign: "center" }}>Sem tarefas</Text>
+                            <Text style={{ color: colors.textSecondary, fontSize: 12, textAlign: "center" }}>
+                                {isDragOver ? 'Solte aqui' : 'Sem tarefas'}
+                            </Text>
                         </View>
                     ) : tasks.map(renderKanbanCard)}
                 </ScrollView>
             </View>
         );
+
+        // Wrap with droppable div on web
+        if (isWeb) {
+            return (
+                <div
+                    key={statusKey}
+                    onDragOver={handleDragOver(statusKey)}
+                    onDragLeave={handleDragLeave}
+                    onDrop={handleDrop(statusKey)}
+                    style={{ display: 'flex', flexShrink: 0 }}
+                >
+                    {columnContent}
+                </div>
+            );
+        }
+        return columnContent;
     };
 
     // ── List Card (original) ──
