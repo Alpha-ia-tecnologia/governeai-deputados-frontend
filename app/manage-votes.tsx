@@ -1,11 +1,11 @@
 import React, { useState, useMemo } from "react";
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal, Alert, Platform, ActivityIndicator } from "react-native";
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal, Platform, ActivityIndicator } from "react-native";
 import { ArrowLeft, Plus, Vote, Edit2, Trash2, X, Search, ThumbsUp, ThumbsDown, BarChart3 } from "lucide-react-native";
 import { router } from "expo-router";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useData } from "@/contexts/DataContext";
-import { useToast } from "@/contexts/ToastContext";
 import { VotingRecord, VoteChoice, VoteResult } from "@/types";
+import { useAlertDialog } from "@/components/Advanced";
 import { Typography, Spacing, Radius } from "@/constants/colors";
 
 
@@ -23,7 +23,8 @@ export default function ManageVotesScreen() {
     const { votingRecords: realVotes, bills: realBills, addVotingRecord, updateVotingRecord, deleteVotingRecord } = useData();
     const votingRecords = realVotes;
     const bills = realBills;
-    const { showToast } = useToast();
+    const { showAlert: showDeleteAlert, AlertDialogComponent: DeleteAlertDialog } = useAlertDialog();
+    const { showAlert: showFeedbackAlert, AlertDialogComponent: FeedbackAlertDialog } = useAlertDialog();
     const [showModal, setShowModal] = useState(false);
     const [editing, setEditing] = useState<VotingRecord | null>(null);
     const [search, setSearch] = useState(""); const [saving, setSaving] = useState(false);
@@ -38,17 +39,31 @@ export default function ManageVotesScreen() {
     const openEdit = (r: VotingRecord) => { setEditing(r); setBillId(r.billId || ""); setSubject(r.subject); setDate(r.date); setSession(r.session || ""); setVote(r.vote); setResult(r.result); setNotes(r.notes || ""); setShowModal(true); };
 
     const handleSave = async () => {
-        if (!subject.trim()) { showToast({ title: "Matéria obrigatória", type: "error" }); return; }
+        if (!subject.trim()) { showFeedbackAlert({ title: "Campo obrigatório", description: "A matéria é obrigatória.", confirmText: "Entendi", variant: "warning", showCancel: false }); return; }
         setSaving(true);
         try {
             const data: any = { billId: billId || undefined, billNumber: undefined, subject: subject.trim(), session: session.trim(), date: date || new Date().toISOString().split("T")[0], vote, result, notes: notes.trim() || undefined };
-            if (editing) { await updateVotingRecord(editing.id, data); showToast({ title: "Atualizado!", type: "success" }); }
-            else { await addVotingRecord(data); showToast({ title: "Registrado!", type: "success" }); }
+            if (editing) { await updateVotingRecord(editing.id, data); showFeedbackAlert({ title: "Voto atualizado!", description: "O registro de votação foi atualizado com sucesso.", confirmText: "OK", variant: "success", showCancel: false }); }
+            else { await addVotingRecord(data); showFeedbackAlert({ title: "Voto registrado!", description: "O registro de votação foi cadastrado com sucesso.", confirmText: "OK", variant: "success", showCancel: false }); }
             setShowModal(false); resetForm();
-        } catch (e: any) { showToast({ title: e.message || "Erro", type: "error" }); } finally { setSaving(false); }
+        } catch (e: any) { showFeedbackAlert({ title: "Erro ao salvar", description: e.message || "Não foi possível salvar o registro.", confirmText: "Fechar", variant: "danger", showCancel: false }); } finally { setSaving(false); }
     };
 
-    const handleDelete = (r: VotingRecord) => Alert.alert("Excluir", `Excluir voto?`, [{ text: "Não", style: "cancel" }, { text: "Sim", style: "destructive", onPress: async () => { try { await deleteVotingRecord(r.id); showToast({ title: "Excluído!", type: "success" }); } catch (e: any) { showToast({ title: e.message, type: "error" }); } } }]);
+    const handleDelete = (r: VotingRecord) => showDeleteAlert({
+        title: "Excluir voto",
+        description: "Tem certeza que deseja excluir este registro de votação? Esta ação não pode ser desfeita.",
+        confirmText: "Excluir",
+        cancelText: "Cancelar",
+        variant: "danger",
+        onConfirm: async () => {
+            try {
+                await deleteVotingRecord(r.id);
+                showFeedbackAlert({ title: "Voto excluído", description: "O registro de votação foi removido com sucesso.", confirmText: "OK", variant: "success", showCancel: false });
+            } catch (e: any) {
+                showFeedbackAlert({ title: "Erro ao excluir", description: e.message || "Não foi possível excluir o registro.", confirmText: "Fechar", variant: "danger", showCancel: false });
+            }
+        },
+    });
 
     const stats = useMemo(() => ({ total: votingRecords.length, favoravel: votingRecords.filter(r => r.vote === "favoravel").length, contrario: votingRecords.filter(r => r.vote === "contrario").length, presenca: votingRecords.length > 0 ? Math.round((votingRecords.filter(r => r.vote !== "ausente").length / votingRecords.length) * 100) : 0 }), [votingRecords]);
     const filtered = votingRecords.filter(r => r.subject.toLowerCase().includes(search.toLowerCase()));
@@ -93,6 +108,8 @@ export default function ManageVotesScreen() {
                     <View style={st.mFooter}><TouchableOpacity onPress={() => { setShowModal(false); resetForm(); }} style={[st.cancelBtn, { borderColor: colors.border }]}><Text style={[st.cancelTxt, { color: colors.textSecondary }]}>Cancelar</Text></TouchableOpacity><TouchableOpacity onPress={handleSave} disabled={saving} style={[st.saveBtn, { backgroundColor: colors.primary, opacity: saving ? 0.6 : 1 }]}>{saving ? <ActivityIndicator color="#fff" size="small" /> : <Text style={st.saveTxt}>{editing ? "Atualizar" : "Registrar"}</Text>}</TouchableOpacity></View>
                 </View></View>
             </Modal>
+            {DeleteAlertDialog}
+            {FeedbackAlertDialog}
         </View>
     );
 }

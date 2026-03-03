@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from "react";
 import {
     View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput,
-    Modal, Alert, Platform, ActivityIndicator,
+    Modal, Platform, ActivityIndicator,
 } from "react-native";
 import {
     ArrowLeft, Plus, ClipboardList, Edit2, Trash2, X, Search,
@@ -10,8 +10,8 @@ import {
 import { router } from "expo-router";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useData } from "@/contexts/DataContext";
-import { useToast } from "@/contexts/ToastContext";
 import { GabineteTask, TaskStatus, TaskPriority } from "@/types";
+import { useAlertDialog } from "@/components/Advanced";
 import { Typography, Spacing, Radius } from "@/constants/colors";
 
 
@@ -31,7 +31,8 @@ export default function ManageTasksScreen() {
     const { gabineteTasks: realTasks, staff: realStaff, addGabineteTask, updateGabineteTask, deleteGabineteTask } = useData();
     const gabineteTasks = realTasks;
     const staff = realStaff;
-    const { showToast } = useToast();
+    const { showAlert: showDeleteAlert, AlertDialogComponent: DeleteAlertDialog } = useAlertDialog();
+    const { showAlert: showFeedbackAlert, AlertDialogComponent: FeedbackAlertDialog } = useAlertDialog();
 
     const [showModal, setShowModal] = useState(false);
     const [editing, setEditing] = useState<GabineteTask | null>(null);
@@ -47,18 +48,32 @@ export default function ManageTasksScreen() {
     const openEdit = (t: GabineteTask) => { setEditing(t); setTitle(t.title); setDescription(t.description); setAssigneeId(t.assigneeId); setPriority(t.priority); setStatus(t.status); setDueDate(t.dueDate || ""); setShowModal(true); };
 
     const handleSave = async () => {
-        if (!title.trim()) { showToast({ title: "Título obrigatório", type: "error" }); return; }
+        if (!title.trim()) { showFeedbackAlert({ title: "Campo obrigatório", description: "O título é obrigatório.", confirmText: "Entendi", variant: "warning", showCancel: false }); return; }
         setSaving(true);
         try {
             const assignee = staff.find(s => s.id === assigneeId);
             const data: any = { title: title.trim(), description: description.trim(), assigneeId: assigneeId || "", assigneeName: assignee?.name || "Não atribuído", priority, status, dueDate: dueDate || new Date().toISOString().split("T")[0] };
-            if (editing) { await updateGabineteTask(editing.id, data); showToast({ title: "Atualizada!", type: "success" }); }
-            else { await addGabineteTask(data); showToast({ title: "Criada!", type: "success" }); }
+            if (editing) { await updateGabineteTask(editing.id, data); showFeedbackAlert({ title: "Tarefa atualizada!", description: "A tarefa foi atualizada com sucesso.", confirmText: "OK", variant: "success", showCancel: false }); }
+            else { await addGabineteTask(data); showFeedbackAlert({ title: "Tarefa criada!", description: "A tarefa foi criada com sucesso.", confirmText: "OK", variant: "success", showCancel: false }); }
             setShowModal(false); resetForm();
-        } catch (e: any) { showToast({ title: e.message || "Erro", type: "error" }); } finally { setSaving(false); }
+        } catch (e: any) { showFeedbackAlert({ title: "Erro ao salvar", description: e.message || "Não foi possível salvar a tarefa.", confirmText: "Fechar", variant: "danger", showCancel: false }); } finally { setSaving(false); }
     };
 
-    const handleDelete = (t: GabineteTask) => Alert.alert("Excluir", `"${t.title}"?`, [{ text: "Não", style: "cancel" }, { text: "Sim", style: "destructive", onPress: async () => { try { await deleteGabineteTask(t.id); showToast({ title: "Excluída!", type: "success" }); } catch (e: any) { showToast({ title: e.message, type: "error" }); } } }]);
+    const handleDelete = (t: GabineteTask) => showDeleteAlert({
+        title: "Excluir tarefa",
+        description: `Tem certeza que deseja excluir "${t.title}"? Esta ação não pode ser desfeita.`,
+        confirmText: "Excluir",
+        cancelText: "Cancelar",
+        variant: "danger",
+        onConfirm: async () => {
+            try {
+                await deleteGabineteTask(t.id);
+                showFeedbackAlert({ title: "Tarefa excluída", description: "A tarefa foi removida com sucesso.", confirmText: "OK", variant: "success", showCancel: false });
+            } catch (e: any) {
+                showFeedbackAlert({ title: "Erro ao excluir", description: e.message || "Não foi possível excluir a tarefa.", confirmText: "Fechar", variant: "danger", showCancel: false });
+            }
+        },
+    });
     const quickStatus = async (t: GabineteTask, s: TaskStatus) => { try { await updateGabineteTask(t.id, { status: s }); } catch { } };
 
     const stats = useMemo(() => ({
@@ -252,6 +267,8 @@ export default function ManageTasksScreen() {
                     </View>
                 </View>
             </Modal>
+            {DeleteAlertDialog}
+            {FeedbackAlertDialog}
         </View>
     );
 }

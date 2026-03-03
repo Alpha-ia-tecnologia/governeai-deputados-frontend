@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from "react";
 import {
     View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput,
-    Modal, Alert, Platform, ActivityIndicator,
+    Modal, Platform, ActivityIndicator,
 } from "react-native";
 import {
     ArrowLeft, Plus, UserCheck, Edit2, Trash2, X, Phone, Mail, Search,
@@ -10,8 +10,8 @@ import {
 import { router } from "expo-router";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useData } from "@/contexts/DataContext";
-import { useToast } from "@/contexts/ToastContext";
 import { StaffMember } from "@/types";
+import { useAlertDialog } from "@/components/Advanced";
 import { Typography, Spacing, Radius } from "@/constants/colors";
 
 
@@ -19,7 +19,8 @@ export default function ManageStaffScreen() {
     const { colors } = useTheme();
     const { staff: realStaff, addStaff, updateStaff, deleteStaff } = useData();
     const staff = realStaff;
-    const { showToast } = useToast();
+    const { showAlert: showDeleteAlert, AlertDialogComponent: DeleteAlertDialog } = useAlertDialog();
+    const { showAlert: showFeedbackAlert, AlertDialogComponent: FeedbackAlertDialog } = useAlertDialog();
 
     const [showModal, setShowModal] = useState(false);
     const [editing, setEditing] = useState<StaffMember | null>(null);
@@ -49,8 +50,8 @@ export default function ManageStaffScreen() {
     };
 
     const handleSave = async () => {
-        if (!name.trim()) { showToast({ title: "Nome é obrigatório", type: "error" }); return; }
-        if (!position.trim()) { showToast({ title: "Cargo é obrigatório", type: "error" }); return; }
+        if (!name.trim()) { showFeedbackAlert({ title: "Campo obrigatório", description: "O nome é obrigatório.", confirmText: "Entendi", variant: "warning", showCancel: false }); return; }
+        if (!position.trim()) { showFeedbackAlert({ title: "Campo obrigatório", description: "O cargo é obrigatório.", confirmText: "Entendi", variant: "warning", showCancel: false }); return; }
         setSaving(true);
         try {
             const data: any = {
@@ -59,23 +60,29 @@ export default function ManageStaffScreen() {
                 department: department.trim() || undefined,
                 active: true, startDate: editing?.startDate || new Date().toISOString(),
             };
-            if (editing) { await updateStaff(editing.id, data); showToast({ title: "Assessor atualizado!", type: "success" }); }
-            else { await addStaff(data); showToast({ title: "Assessor cadastrado!", type: "success" }); }
+            if (editing) { await updateStaff(editing.id, data); showFeedbackAlert({ title: "Assessor atualizado!", description: "Os dados do assessor foram atualizados com sucesso.", confirmText: "OK", variant: "success", showCancel: false }); }
+            else { await addStaff(data); showFeedbackAlert({ title: "Assessor cadastrado!", description: "O assessor foi cadastrado com sucesso.", confirmText: "OK", variant: "success", showCancel: false }); }
             setShowModal(false); resetForm();
-        } catch (e: any) { showToast({ title: e.message || "Erro ao salvar", type: "error" }); }
+        } catch (e: any) { showFeedbackAlert({ title: "Erro ao salvar", description: e.message || "Não foi possível salvar os dados.", confirmText: "Fechar", variant: "danger", showCancel: false }); }
         finally { setSaving(false); }
     };
 
     const handleDelete = (m: StaffMember) => {
-        Alert.alert("Excluir Assessor", `Excluir "${m.name}"?`, [
-            { text: "Cancelar", style: "cancel" },
-            {
-                text: "Excluir", style: "destructive", onPress: async () => {
-                    try { await deleteStaff(m.id); showToast({ title: "Excluído!", type: "success" }); }
-                    catch (e: any) { showToast({ title: e.message, type: "error" }); }
+        showDeleteAlert({
+            title: "Excluir Assessor",
+            description: `Tem certeza que deseja excluir "${m.name}"? Esta ação não pode ser desfeita.`,
+            confirmText: "Excluir",
+            cancelText: "Cancelar",
+            variant: "danger",
+            onConfirm: async () => {
+                try {
+                    await deleteStaff(m.id);
+                    showFeedbackAlert({ title: "Assessor excluído", description: "O assessor foi removido com sucesso.", confirmText: "OK", variant: "success", showCancel: false });
+                } catch (e: any) {
+                    showFeedbackAlert({ title: "Erro ao excluir", description: e.message || "Não foi possível excluir o assessor.", confirmText: "Fechar", variant: "danger", showCancel: false });
                 }
             },
-        ]);
+        });
     };
 
     const departments = useMemo(() => {
@@ -281,6 +288,8 @@ export default function ManageStaffScreen() {
                     </View>
                 </View>
             </Modal>
+            {DeleteAlertDialog}
+            {FeedbackAlertDialog}
         </View>
     );
 }

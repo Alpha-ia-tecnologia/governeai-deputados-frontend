@@ -7,7 +7,6 @@ import {
     TouchableOpacity,
     TextInput,
     Modal,
-    Alert,
     Platform,
     ActivityIndicator,
 } from "react-native";
@@ -27,15 +26,16 @@ import {
 import { router } from "expo-router";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useData } from "@/contexts/DataContext";
-import { useToast } from "@/contexts/ToastContext";
 import { City } from "@/types";
+import { useAlertDialog } from "@/components/Advanced";
 import { MARANHAO_CITIES, findCityData } from "@/constants/maranhao-cities";
 
 
 export default function ManageCitiesScreen() {
     const { colors } = useTheme();
     const { cities, addCity, updateCity, deleteCity } = useData();
-    const { showToast } = useToast();
+    const { showAlert: showDeleteAlert, AlertDialogComponent: DeleteAlertDialog } = useAlertDialog();
+    const { showAlert: showFeedbackAlert, AlertDialogComponent: FeedbackAlertDialog } = useAlertDialog();
 
     const [showModal, setShowModal] = useState(false);
     const [editingCity, setEditingCity] = useState<City | null>(null);
@@ -86,7 +86,7 @@ export default function ManageCitiesScreen() {
 
     const handleSave = async () => {
         if (!name.trim()) {
-            showToast({ title: "Nome da cidade é obrigatório", type: "error" });
+            showFeedbackAlert({ title: "Campo obrigatório", description: "O nome da cidade é obrigatório.", confirmText: "Entendi", variant: "warning", showCancel: false });
             return;
         }
 
@@ -104,41 +104,37 @@ export default function ManageCitiesScreen() {
 
             if (editingCity) {
                 await updateCity(editingCity.id, data);
-                showToast({ title: "Cidade atualizada com sucesso!", type: "success" });
+                showFeedbackAlert({ title: "Cidade atualizada!", description: "A cidade foi atualizada com sucesso.", confirmText: "OK", variant: "success", showCancel: false });
             } else {
                 await addCity(data);
-                showToast({ title: "Cidade cadastrada com sucesso!", type: "success" });
+                showFeedbackAlert({ title: "Cidade cadastrada!", description: "A cidade foi cadastrada com sucesso.", confirmText: "OK", variant: "success", showCancel: false });
             }
 
             setShowModal(false);
             resetForm();
         } catch (error: any) {
-            showToast({ title: error.message || "Erro ao salvar cidade", type: "error" });
+            showFeedbackAlert({ title: "Erro ao salvar", description: error.message || "Não foi possível salvar a cidade.", confirmText: "Fechar", variant: "danger", showCancel: false });
         } finally {
             setSaving(false);
         }
     };
 
     const handleDelete = (city: City) => {
-        Alert.alert(
-            "Excluir Cidade",
-            `Tem certeza que deseja excluir "${city.name}"?`,
-            [
-                { text: "Cancelar", style: "cancel" },
-                {
-                    text: "Excluir",
-                    style: "destructive",
-                    onPress: async () => {
-                        try {
-                            await deleteCity(city.id);
-                            showToast({ title: "Cidade excluída com sucesso!", type: "success" });
-                        } catch (error: any) {
-                            showToast({ title: error.message || "Erro ao excluir cidade", type: "error" });
-                        }
-                    },
-                },
-            ]
-        );
+        showDeleteAlert({
+            title: "Excluir Cidade",
+            description: `Tem certeza que deseja excluir "${city.name}"? Esta ação não pode ser desfeita.`,
+            confirmText: "Excluir",
+            cancelText: "Cancelar",
+            variant: "danger",
+            onConfirm: async () => {
+                try {
+                    await deleteCity(city.id);
+                    showFeedbackAlert({ title: "Cidade excluída", description: "A cidade foi removida com sucesso.", confirmText: "OK", variant: "success", showCancel: false });
+                } catch (error: any) {
+                    showFeedbackAlert({ title: "Erro ao excluir", description: error.message || "Não foi possível excluir a cidade.", confirmText: "Fechar", variant: "danger", showCancel: false });
+                }
+            },
+        });
     };
 
     const filteredCities = cities.filter(
@@ -390,6 +386,8 @@ export default function ManageCitiesScreen() {
                     </View>
                 </View>
             </Modal>
+            {DeleteAlertDialog}
+            {FeedbackAlertDialog}
         </View>
     );
 }

@@ -1,11 +1,11 @@
 import React, { useState } from "react";
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal, Alert, Platform, ActivityIndicator } from "react-native";
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal, Platform, ActivityIndicator } from "react-native";
 import { ArrowLeft, Plus, UserPlus, Edit2, Trash2, X, Search, Phone, MapPin, ShieldCheck, Minus, ShieldAlert } from "lucide-react-native";
 import { router } from "expo-router";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useData } from "@/contexts/DataContext";
-import { useToast } from "@/contexts/ToastContext";
 import { PoliticalContact, PoliticalRole } from "@/types";
+import { useAlertDialog } from "@/components/Advanced";
 import { Typography, Spacing, Radius } from "@/constants/colors";
 
 
@@ -20,7 +20,8 @@ export default function ManagePoliticalContactsScreen() {
     const { colors } = useTheme();
     const { politicalContacts: realContacts, addPoliticalContact, updatePoliticalContact, deletePoliticalContact } = useData();
     const politicalContacts = realContacts;
-    const { showToast } = useToast();
+    const { showAlert: showDeleteAlert, AlertDialogComponent: DeleteAlertDialog } = useAlertDialog();
+    const { showAlert: showFeedbackAlert, AlertDialogComponent: FeedbackAlertDialog } = useAlertDialog();
     const [showModal, setShowModal] = useState(false);
     const [editing, setEditing] = useState<PoliticalContact | null>(null);
     const [search, setSearch] = useState(""); const [saving, setSaving] = useState(false);
@@ -35,17 +36,31 @@ export default function ManagePoliticalContactsScreen() {
     const openEdit = (c: PoliticalContact) => { setEditing(c); setName(c.name); setPhone(c.phone); setEmail(c.email || ""); setPoliticalRole(c.politicalRole); setParty(c.party || ""); setCity(c.city); setState(c.state); setNotes(c.notes || ""); setRelationship(c.relationship); setShowModal(true); };
 
     const handleSave = async () => {
-        if (!name.trim()) { showToast({ title: "Nome obrigatório", type: "error" }); return; }
+        if (!name.trim()) { showFeedbackAlert({ title: "Campo obrigatório", description: "O nome é obrigatório.", confirmText: "Entendi", variant: "warning", showCancel: false }); return; }
         setSaving(true);
         try {
             const data: any = { name: name.trim(), phone: phone.trim(), email: email.trim() || undefined, politicalRole, party: party.trim(), city: city.trim(), state: state.trim(), notes: notes.trim() || undefined, relationship, active: true };
-            if (editing) { await updatePoliticalContact(editing.id, data); showToast({ title: "Atualizado!", type: "success" }); }
-            else { await addPoliticalContact(data); showToast({ title: "Cadastrado!", type: "success" }); }
+            if (editing) { await updatePoliticalContact(editing.id, data); showFeedbackAlert({ title: "Contato atualizado!", description: "O contato político foi atualizado com sucesso.", confirmText: "OK", variant: "success", showCancel: false }); }
+            else { await addPoliticalContact(data); showFeedbackAlert({ title: "Contato cadastrado!", description: "O contato político foi cadastrado com sucesso.", confirmText: "OK", variant: "success", showCancel: false }); }
             setShowModal(false); resetForm();
-        } catch (e: any) { showToast({ title: e.message || "Erro", type: "error" }); } finally { setSaving(false); }
+        } catch (e: any) { showFeedbackAlert({ title: "Erro ao salvar", description: e.message || "Não foi possível salvar o contato.", confirmText: "Fechar", variant: "danger", showCancel: false }); } finally { setSaving(false); }
     };
 
-    const handleDelete = (c: PoliticalContact) => Alert.alert("Excluir", `"${c.name}"?`, [{ text: "Não", style: "cancel" }, { text: "Sim", style: "destructive", onPress: async () => { try { await deletePoliticalContact(c.id); showToast({ title: "Excluído!", type: "success" }); } catch (e: any) { showToast({ title: e.message, type: "error" }); } } }]);
+    const handleDelete = (c: PoliticalContact) => showDeleteAlert({
+        title: "Excluir contato",
+        description: `Tem certeza que deseja excluir "${c.name}"? Esta ação não pode ser desfeita.`,
+        confirmText: "Excluir",
+        cancelText: "Cancelar",
+        variant: "danger",
+        onConfirm: async () => {
+            try {
+                await deletePoliticalContact(c.id);
+                showFeedbackAlert({ title: "Contato excluído", description: "O contato político foi removido com sucesso.", confirmText: "OK", variant: "success", showCancel: false });
+            } catch (e: any) {
+                showFeedbackAlert({ title: "Erro ao excluir", description: e.message || "Não foi possível excluir o contato.", confirmText: "Fechar", variant: "danger", showCancel: false });
+            }
+        },
+    });
 
     const filtered = politicalContacts.filter(c => c.name.toLowerCase().includes(search.toLowerCase()) || (c.party || "").toLowerCase().includes(search.toLowerCase()));
     const relColor = (r: string) => r === "aliado" ? "#22c55e" : r === "oposicao" ? "#ef4444" : "#6b7280";
@@ -94,6 +109,8 @@ export default function ManagePoliticalContactsScreen() {
                     <View style={st.mFooter}><TouchableOpacity onPress={() => { setShowModal(false); resetForm(); }} style={[st.cancelBtn, { borderColor: colors.border }]}><Text style={[st.cancelTxt, { color: colors.textSecondary }]}>Cancelar</Text></TouchableOpacity><TouchableOpacity onPress={handleSave} disabled={saving} style={[st.saveBtn, { backgroundColor: colors.primary, opacity: saving ? 0.6 : 1 }]}>{saving ? <ActivityIndicator color="#fff" size="small" /> : <Text style={st.saveTxt}>{editing ? "Atualizar" : "Cadastrar"}</Text>}</TouchableOpacity></View>
                 </View></View>
             </Modal>
+            {DeleteAlertDialog}
+            {FeedbackAlertDialog}
         </View>
     );
 }

@@ -1,11 +1,11 @@
 import React, { useState } from "react";
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal, Alert, Platform, ActivityIndicator } from "react-native";
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal, Platform, ActivityIndicator } from "react-native";
 import { ArrowLeft, Plus, FileText, Edit2, Trash2, X, Search, Clock, CircleCheck, Gavel } from "lucide-react-native";
 import { router } from "expo-router";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useData } from "@/contexts/DataContext";
-import { useToast } from "@/contexts/ToastContext";
 import { LegislativeBill, BillType, BillStatus, BillAuthorship } from "@/types";
+import { useAlertDialog } from "@/components/Advanced";
 import { Typography, Spacing, Radius } from "@/constants/colors";
 
 
@@ -26,7 +26,8 @@ export default function ManageBillsScreen() {
     const { colors } = useTheme();
     const { bills: realBills, addBill, updateBill, deleteBill } = useData();
     const bills = realBills;
-    const { showToast } = useToast();
+    const { showAlert: showDeleteAlert, AlertDialogComponent: DeleteAlertDialog } = useAlertDialog();
+    const { showAlert: showFeedbackAlert, AlertDialogComponent: FeedbackAlertDialog } = useAlertDialog();
     const [showModal, setShowModal] = useState(false);
     const [editing, setEditing] = useState<LegislativeBill | null>(null);
     const [search, setSearch] = useState(""); const [saving, setSaving] = useState(false);
@@ -41,17 +42,31 @@ export default function ManageBillsScreen() {
     const openEdit = (b: LegislativeBill) => { setEditing(b); setNumber(b.number); setTitle(b.title); setSummary(b.summary); setType(b.type); setAuthorship(b.authorship); setBillStatus(b.status); setPresentedDate(b.presentedDate); setArea(b.area || ""); setShowModal(true); };
 
     const handleSave = async () => {
-        if (!number.trim()) { showToast({ title: "Número obrigatório", type: "error" }); return; }
+        if (!number.trim()) { showFeedbackAlert({ title: "Campo obrigatório", description: "O número do projeto é obrigatório.", confirmText: "Entendi", variant: "warning", showCancel: false }); return; }
         setSaving(true);
         try {
             const data: any = { number: number.trim(), title: title.trim(), summary: summary.trim(), type, authorship, status: billStatus, presentedDate: presentedDate || new Date().toISOString().split("T")[0], area: area.trim() };
-            if (editing) { await updateBill(editing.id, data); showToast({ title: "Atualizado!", type: "success" }); }
-            else { await addBill(data); showToast({ title: "Cadastrado!", type: "success" }); }
+            if (editing) { await updateBill(editing.id, data); showFeedbackAlert({ title: "Projeto atualizado!", description: "O projeto de lei foi atualizado com sucesso.", confirmText: "OK", variant: "success", showCancel: false }); }
+            else { await addBill(data); showFeedbackAlert({ title: "Projeto cadastrado!", description: "O projeto de lei foi cadastrado com sucesso.", confirmText: "OK", variant: "success", showCancel: false }); }
             setShowModal(false); resetForm();
-        } catch (e: any) { showToast({ title: e.message || "Erro", type: "error" }); } finally { setSaving(false); }
+        } catch (e: any) { showFeedbackAlert({ title: "Erro ao salvar", description: e.message || "Não foi possível salvar o projeto.", confirmText: "Fechar", variant: "danger", showCancel: false }); } finally { setSaving(false); }
     };
 
-    const handleDelete = (b: LegislativeBill) => Alert.alert("Excluir", `"${b.number}"?`, [{ text: "Não", style: "cancel" }, { text: "Sim", style: "destructive", onPress: async () => { try { await deleteBill(b.id); showToast({ title: "Excluído!", type: "success" }); } catch (e: any) { showToast({ title: e.message, type: "error" }); } } }]);
+    const handleDelete = (b: LegislativeBill) => showDeleteAlert({
+        title: "Excluir projeto",
+        description: `Tem certeza que deseja excluir "${b.number}"? Esta ação não pode ser desfeita.`,
+        confirmText: "Excluir",
+        cancelText: "Cancelar",
+        variant: "danger",
+        onConfirm: async () => {
+            try {
+                await deleteBill(b.id);
+                showFeedbackAlert({ title: "Projeto excluído", description: "O projeto de lei foi removido com sucesso.", confirmText: "OK", variant: "success", showCancel: false });
+            } catch (e: any) {
+                showFeedbackAlert({ title: "Erro ao excluir", description: e.message || "Não foi possível excluir o projeto.", confirmText: "Fechar", variant: "danger", showCancel: false });
+            }
+        },
+    });
 
     const filtered = bills.filter(b => b.title.toLowerCase().includes(search.toLowerCase()) || b.number.toLowerCase().includes(search.toLowerCase()));
     const statusColor = (st: BillStatus) => STATUSES.find(s => s.v === st)?.c || "#6b7280";
@@ -105,6 +120,8 @@ export default function ManageBillsScreen() {
                     <View style={st.mFooter}><TouchableOpacity onPress={() => { setShowModal(false); resetForm(); }} style={[st.cancelBtn, { borderColor: colors.border }]}><Text style={[st.cancelTxt, { color: colors.textSecondary }]}>Cancelar</Text></TouchableOpacity><TouchableOpacity onPress={handleSave} disabled={saving} style={[st.saveBtn, { backgroundColor: colors.primary, opacity: saving ? 0.6 : 1 }]}>{saving ? <ActivityIndicator color="#fff" size="small" /> : <Text style={st.saveTxt}>{editing ? "Atualizar" : "Cadastrar"}</Text>}</TouchableOpacity></View>
                 </View></View>
             </Modal>
+            {DeleteAlertDialog}
+            {FeedbackAlertDialog}
         </View>
     );
 }

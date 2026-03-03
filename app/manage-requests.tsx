@@ -7,7 +7,6 @@ import {
     TouchableOpacity,
     TextInput,
     Modal,
-    Alert,
     Platform,
     ActivityIndicator,
 } from "react-native";
@@ -30,8 +29,8 @@ import {
 import { router } from "expo-router";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useData } from "@/contexts/DataContext";
-import { useToast } from "@/contexts/ToastContext";
 import { ExecutiveRequest, RequestStatus, RequestType } from "@/types";
+import { useAlertDialog } from "@/components/Advanced";
 
 const STATUS_CONFIG: Record<RequestStatus, { label: string; color: string; icon: any }> = {
     enviado: { label: "Enviado", color: "#3B82F6", icon: Send },
@@ -50,7 +49,8 @@ const TYPE_CONFIG: Record<RequestType, { label: string }> = {
 export default function ManageRequestsScreen() {
     const { colors } = useTheme();
     const { executiveRequests, addExecutiveRequest, updateExecutiveRequest, deleteExecutiveRequest } = useData();
-    const { showToast } = useToast();
+    const { showAlert: showDeleteAlert, AlertDialogComponent: DeleteAlertDialog } = useAlertDialog();
+    const { showAlert: showFeedbackAlert, AlertDialogComponent: FeedbackAlertDialog } = useAlertDialog();
 
     const [showModal, setShowModal] = useState(false);
     const [showDetailModal, setShowDetailModal] = useState(false);
@@ -108,7 +108,7 @@ export default function ManageRequestsScreen() {
 
     const handleSave = async () => {
         if (!protocolNumber.trim() || !subject.trim()) {
-            showToast({ title: "Número do protocolo e assunto são obrigatórios", type: "error" });
+            showFeedbackAlert({ title: "Campos obrigatórios", description: "Número do protocolo e assunto são obrigatórios.", confirmText: "Entendi", variant: "warning", showCancel: false });
             return;
         }
 
@@ -127,41 +127,37 @@ export default function ManageRequestsScreen() {
 
             if (editingRequest) {
                 await updateExecutiveRequest(editingRequest.id, data);
-                showToast({ title: "Requerimento atualizado com sucesso!", type: "success" });
+                showFeedbackAlert({ title: "Requerimento atualizado!", description: "O requerimento foi atualizado com sucesso.", confirmText: "OK", variant: "success", showCancel: false });
             } else {
                 await addExecutiveRequest(data);
-                showToast({ title: "Requerimento cadastrado com sucesso!", type: "success" });
+                showFeedbackAlert({ title: "Requerimento cadastrado!", description: "O requerimento foi cadastrado com sucesso.", confirmText: "OK", variant: "success", showCancel: false });
             }
 
             setShowModal(false);
             resetForm();
         } catch (error: any) {
-            showToast({ title: error.message || "Erro ao salvar requerimento", type: "error" });
+            showFeedbackAlert({ title: "Erro ao salvar", description: error.message || "Não foi possível salvar o requerimento.", confirmText: "Fechar", variant: "danger", showCancel: false });
         } finally {
             setSaving(false);
         }
     };
 
     const handleDelete = (request: ExecutiveRequest) => {
-        Alert.alert(
-            "Excluir Requerimento",
-            `Tem certeza que deseja excluir "${request.protocolNumber}"?`,
-            [
-                { text: "Cancelar", style: "cancel" },
-                {
-                    text: "Excluir",
-                    style: "destructive",
-                    onPress: async () => {
-                        try {
-                            await deleteExecutiveRequest(request.id);
-                            showToast({ title: "Requerimento excluído!", type: "success" });
-                        } catch (error: any) {
-                            showToast({ title: error.message || "Erro ao excluir", type: "error" });
-                        }
-                    },
-                },
-            ]
-        );
+        showDeleteAlert({
+            title: "Excluir Requerimento",
+            description: `Tem certeza que deseja excluir "${request.protocolNumber}"? Esta ação não pode ser desfeita.`,
+            confirmText: "Excluir",
+            cancelText: "Cancelar",
+            variant: "danger",
+            onConfirm: async () => {
+                try {
+                    await deleteExecutiveRequest(request.id);
+                    showFeedbackAlert({ title: "Requerimento excluído", description: "O requerimento foi removido com sucesso.", confirmText: "OK", variant: "success", showCancel: false });
+                } catch (error: any) {
+                    showFeedbackAlert({ title: "Erro ao excluir", description: error.message || "Não foi possível excluir o requerimento.", confirmText: "Fechar", variant: "danger", showCancel: false });
+                }
+            },
+        });
     };
 
     const filteredRequests = useMemo(() => {
@@ -561,6 +557,8 @@ export default function ManageRequestsScreen() {
                     </View>
                 </View>
             </Modal>
+            {DeleteAlertDialog}
+            {FeedbackAlertDialog}
         </View>
     );
 }

@@ -1,11 +1,11 @@
 import React, { useState, useMemo } from "react";
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal, Alert, Platform, ActivityIndicator } from "react-native";
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal, Platform, ActivityIndicator } from "react-native";
 import { ArrowLeft, Plus, Receipt, Edit2, Trash2, X, Search } from "lucide-react-native";
 import { router } from "expo-router";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useData } from "@/contexts/DataContext";
-import { useToast } from "@/contexts/ToastContext";
 import { CeapExpense, ExpenseCategory } from "@/types";
+import { useAlertDialog } from "@/components/Advanced";
 import { Typography, Spacing, Radius } from "@/constants/colors";
 import { CEAP_MONTHLY_QUOTA } from "@/constants/mockData";
 
@@ -22,7 +22,8 @@ export default function ManageCeapScreen() {
     const { colors } = useTheme();
     const { ceapExpenses: realCeap, addCeapExpense, updateCeapExpense, deleteCeapExpense } = useData();
     const ceapExpenses = realCeap;
-    const { showToast } = useToast();
+    const { showAlert: showDeleteAlert, AlertDialogComponent: DeleteAlertDialog } = useAlertDialog();
+    const { showAlert: showFeedbackAlert, AlertDialogComponent: FeedbackAlertDialog } = useAlertDialog();
     const [showModal, setShowModal] = useState(false);
     const [editing, setEditing] = useState<CeapExpense | null>(null);
     const [search, setSearch] = useState(""); const [saving, setSaving] = useState(false);
@@ -35,18 +36,32 @@ export default function ManageCeapScreen() {
     const openEdit = (e: CeapExpense) => { setEditing(e); setDescription(e.description); setCategory(e.category); setSupplier(e.supplier); setDocumentNumber(e.documentNumber || ""); setValue(String(e.value)); setDate(e.date); setShowModal(true); };
 
     const handleSave = async () => {
-        if (!description.trim()) { showToast({ title: "Descrição obrigatória", type: "error" }); return; }
-        if (!value || isNaN(parseFloat(value))) { showToast({ title: "Valor obrigatório", type: "error" }); return; }
+        if (!description.trim()) { showFeedbackAlert({ title: "Campo obrigatório", description: "A descrição é obrigatória.", confirmText: "Entendi", variant: "warning", showCancel: false }); return; }
+        if (!value || isNaN(parseFloat(value))) { showFeedbackAlert({ title: "Campo obrigatório", description: "Informe um valor válido.", confirmText: "Entendi", variant: "warning", showCancel: false }); return; }
         setSaving(true);
         try {
             const data: any = { description: description.trim(), category, supplier: supplier.trim(), documentNumber: documentNumber.trim() || undefined, value: parseFloat(value), date: date || new Date().toISOString().split("T")[0] };
-            if (editing) { await updateCeapExpense(editing.id, data); showToast({ title: "Atualizado!", type: "success" }); }
-            else { await addCeapExpense(data); showToast({ title: "Registrado!", type: "success" }); }
+            if (editing) { await updateCeapExpense(editing.id, data); showFeedbackAlert({ title: "Despesa atualizada!", description: "A despesa CEAP foi atualizada com sucesso.", confirmText: "OK", variant: "success", showCancel: false }); }
+            else { await addCeapExpense(data); showFeedbackAlert({ title: "Despesa registrada!", description: "A despesa CEAP foi registrada com sucesso.", confirmText: "OK", variant: "success", showCancel: false }); }
             setShowModal(false); resetForm();
-        } catch (e: any) { showToast({ title: e.message || "Erro", type: "error" }); } finally { setSaving(false); }
+        } catch (e: any) { showFeedbackAlert({ title: "Erro ao salvar", description: e.message || "Não foi possível salvar a despesa.", confirmText: "Fechar", variant: "danger", showCancel: false }); } finally { setSaving(false); }
     };
 
-    const handleDelete = (e: CeapExpense) => Alert.alert("Excluir", `"${e.description}"?`, [{ text: "Não", style: "cancel" }, { text: "Sim", style: "destructive", onPress: async () => { try { await deleteCeapExpense(e.id); showToast({ title: "Excluído!", type: "success" }); } catch (err: any) { showToast({ title: err.message, type: "error" }); } } }]);
+    const handleDelete = (e: CeapExpense) => showDeleteAlert({
+        title: "Excluir despesa",
+        description: `Tem certeza que deseja excluir "${e.description}"? Esta ação não pode ser desfeita.`,
+        confirmText: "Excluir",
+        cancelText: "Cancelar",
+        variant: "danger",
+        onConfirm: async () => {
+            try {
+                await deleteCeapExpense(e.id);
+                showFeedbackAlert({ title: "Despesa excluída", description: "A despesa CEAP foi removida com sucesso.", confirmText: "OK", variant: "success", showCancel: false });
+            } catch (err: any) {
+                showFeedbackAlert({ title: "Erro ao excluir", description: err.message || "Não foi possível excluir a despesa.", confirmText: "Fechar", variant: "danger", showCancel: false });
+            }
+        },
+    });
 
     const totalGasto = useMemo(() => ceapExpenses.reduce((s, e) => s + e.value, 0), [ceapExpenses]);
     const QUOTA = CEAP_MONTHLY_QUOTA;
@@ -102,6 +117,8 @@ export default function ManageCeapScreen() {
                     <View style={st.mFooter}><TouchableOpacity onPress={() => { setShowModal(false); resetForm(); }} style={[st.cancelBtn, { borderColor: colors.border }]}><Text style={[st.cancelTxt, { color: colors.textSecondary }]}>Cancelar</Text></TouchableOpacity><TouchableOpacity onPress={handleSave} disabled={saving} style={[st.saveBtn, { backgroundColor: colors.primary, opacity: saving ? 0.6 : 1 }]}>{saving ? <ActivityIndicator color="#fff" size="small" /> : <Text style={st.saveTxt}>{editing ? "Atualizar" : "Registrar"}</Text>}</TouchableOpacity></View>
                 </View></View>
             </Modal>
+            {DeleteAlertDialog}
+            {FeedbackAlertDialog}
         </View>
     );
 }

@@ -6,13 +6,12 @@ import {
   StyleSheet,
   TouchableOpacity,
   TextInput,
-  Alert,
   ActivityIndicator,
   Modal,
   RefreshControl,
   Platform,
 } from "react-native";
-import { useToast } from "@/contexts/ToastContext";
+import { useAlertDialog } from "@/components/Advanced";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
@@ -25,7 +24,6 @@ import {
   UserX,
   Filter,
   X,
-  AlertTriangle,
 } from "lucide-react-native";
 import { useAuth } from "@/contexts/AuthContext";
 import { usersService } from "@/services";
@@ -34,7 +32,8 @@ import Colors from "@/constants/colors";
 
 export default function GerenciamentoUsuariosScreen() {
   const { user: currentUser } = useAuth();
-  const { showToast } = useToast();
+  const { showAlert: showDeleteAlert, AlertDialogComponent: DeleteAlertDialog } = useAlertDialog();
+  const { showAlert: showFeedbackAlert, AlertDialogComponent: FeedbackAlertDialog } = useAlertDialog();
   const [users, setUsers] = useState<User[]>([]);
   const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -44,16 +43,6 @@ export default function GerenciamentoUsuariosScreen() {
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [showOnlyActive, setShowOnlyActive] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-
-  // Estados para modal de confirmação
-  const [showConfirmModal, setShowConfirmModal] = useState(false);
-  const [confirmModalData, setConfirmModalData] = useState<{
-    title: string;
-    message: string;
-    confirmText: string;
-    confirmStyle: "default" | "destructive";
-    onConfirm: () => void;
-  } | null>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -109,102 +98,86 @@ export default function GerenciamentoUsuariosScreen() {
     setFilteredUsers(filtered);
   };
 
-  // Função helper para mostrar confirmação (funciona em web e mobile)
-  const showConfirmation = (
-    title: string,
-    message: string,
-    confirmText: string,
-    confirmStyle: "default" | "destructive",
-    onConfirm: () => void
-  ) => {
-    if (Platform.OS === "web") {
-      // No web, usar modal customizado
-      setConfirmModalData({ title, message, confirmText, confirmStyle, onConfirm });
-      setShowConfirmModal(true);
-    } else {
-      // No mobile, usar Alert nativo
-      Alert.alert(title, message, [
-        { text: "Cancelar", style: "cancel" },
-        { text: confirmText, style: confirmStyle, onPress: onConfirm },
-      ]);
-    }
-  };
-
-  // Função helper para mostrar mensagem de sucesso/erro
-  const showMessage = (title: string, message: string, isError: boolean = false) => {
-    showToast({ title, message, type: isError ? 'error' : 'success' });
-  };
-
   const handleToggleActive = async (userId: string, currentStatus: boolean) => {
     console.log(`Tentando ${currentStatus ? 'desativar' : 'ativar'} usuário ${userId}`);
 
-    const executeToggle = async () => {
-      try {
-        setIsProcessing(true);
-        console.log(`Chamando toggleActive para usuário ${userId} com status ${!currentStatus}`);
-        await usersService.toggleActive(userId, !currentStatus);
-        console.log('Status atualizado com sucesso');
-        await loadUsers();
-        showMessage(
-          "Sucesso",
-          currentStatus
-            ? "Usuário desativado com sucesso"
-            : "Usuário ativado com sucesso",
-          false
-        );
-      } catch (error: any) {
-        console.error('Erro ao alterar status:', error);
-        showMessage(
-          "Erro",
-          error.response?.data?.message || "Não foi possível atualizar o status",
-          true
-        );
-      } finally {
-        setIsProcessing(false);
-      }
-    };
-
-    showConfirmation(
-      currentStatus ? "Desativar Usuário" : "Ativar Usuário",
-      currentStatus
+    showDeleteAlert({
+      title: currentStatus ? "Desativar Usuário" : "Ativar Usuário",
+      description: currentStatus
         ? "Tem certeza que deseja desativar este usuário?"
         : "Tem certeza que deseja ativar este usuário?",
-      "Confirmar",
-      currentStatus ? "destructive" : "default",
-      executeToggle
-    );
+      confirmText: "Confirmar",
+      cancelText: "Cancelar",
+      variant: currentStatus ? "danger" : "info",
+      onConfirm: async () => {
+        try {
+          setIsProcessing(true);
+          console.log(`Chamando toggleActive para usuário ${userId} com status ${!currentStatus}`);
+          await usersService.toggleActive(userId, !currentStatus);
+          console.log('Status atualizado com sucesso');
+          await loadUsers();
+          showFeedbackAlert({
+            title: "Sucesso",
+            description: currentStatus
+              ? "Usuário desativado com sucesso"
+              : "Usuário ativado com sucesso",
+            confirmText: "OK",
+            variant: "success",
+            showCancel: false,
+          });
+        } catch (error: any) {
+          console.error('Erro ao alterar status:', error);
+          showFeedbackAlert({
+            title: "Erro",
+            description: error.response?.data?.message || "Não foi possível atualizar o status",
+            confirmText: "Fechar",
+            variant: "danger",
+            showCancel: false,
+          });
+        } finally {
+          setIsProcessing(false);
+        }
+      },
+    });
   };
 
   const handleDeleteUser = async (userId: string, userName: string) => {
     console.log(`Tentando excluir usuário ${userId} (${userName})`);
 
-    const executeDelete = async () => {
-      try {
-        setIsProcessing(true);
-        console.log(`Chamando delete para usuário ${userId}`);
-        await usersService.delete(userId);
-        console.log('Usuário excluído com sucesso');
-        await loadUsers();
-        showMessage("Sucesso", `Usuário ${userName} foi excluído com sucesso`, false);
-      } catch (error: any) {
-        console.error('Erro ao excluir usuário:', error);
-        showMessage(
-          "Erro",
-          error.response?.data?.message || "Não foi possível excluir o usuário",
-          true
-        );
-      } finally {
-        setIsProcessing(false);
-      }
-    };
-
-    showConfirmation(
-      "Excluir Usuário",
-      `Tem certeza que deseja excluir o usuário ${userName}?\n\nEsta ação não pode ser desfeita.`,
-      "Excluir",
-      "destructive",
-      executeDelete
-    );
+    showDeleteAlert({
+      title: "Excluir Usuário",
+      description: `Tem certeza que deseja excluir o usuário ${userName}?\n\nEsta ação não pode ser desfeita.`,
+      confirmText: "Excluir",
+      cancelText: "Cancelar",
+      variant: "danger",
+      onConfirm: async () => {
+        try {
+          setIsProcessing(true);
+          console.log(`Chamando delete para usuário ${userId}`);
+          await usersService.delete(userId);
+          console.log('Usuário excluído com sucesso');
+          await loadUsers();
+          showFeedbackAlert({
+            title: "Sucesso",
+            description: `Usuário ${userName} foi excluído com sucesso`,
+            confirmText: "OK",
+            variant: "success",
+            showCancel: false,
+          });
+        } catch (error: any) {
+          console.error('Erro ao excluir usuário:', error);
+          showFeedbackAlert({
+            title: "Erro",
+            description: error.response?.data?.message || "Não foi possível excluir o usuário",
+            confirmText: "Fechar",
+            variant: "danger",
+            showCancel: false,
+          });
+        } finally {
+          setIsProcessing(false);
+        }
+      },
+    });
   };
 
   const getRoleBadgeColor = (role: UserRole) => {
@@ -446,52 +419,7 @@ export default function GerenciamentoUsuariosScreen() {
   );
 
   // Modal de confirmação customizado (para funcionar no web)
-  const ConfirmModal = () => (
-    <Modal
-      visible={showConfirmModal}
-      animationType="fade"
-      transparent={true}
-      onRequestClose={() => setShowConfirmModal(false)}
-    >
-      <View style={styles.confirmModalOverlay}>
-        <View style={styles.confirmModalContent}>
-          <View style={styles.confirmModalIcon}>
-            <AlertTriangle size={40} color={confirmModalData?.confirmStyle === "destructive" ? "#dc2626" : Colors.light.primary} />
-          </View>
-          <Text style={styles.confirmModalTitle}>{confirmModalData?.title}</Text>
-          <Text style={styles.confirmModalMessage}>{confirmModalData?.message}</Text>
-          <View style={styles.confirmModalButtons}>
-            <TouchableOpacity
-              style={[styles.confirmModalButton, styles.confirmModalCancelButton]}
-              onPress={() => {
-                setShowConfirmModal(false);
-                setConfirmModalData(null);
-              }}
-            >
-              <Text style={styles.confirmModalCancelText}>Cancelar</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[
-                styles.confirmModalButton,
-                confirmModalData?.confirmStyle === "destructive"
-                  ? styles.confirmModalDestructiveButton
-                  : styles.confirmModalConfirmButton,
-              ]}
-              onPress={() => {
-                setShowConfirmModal(false);
-                confirmModalData?.onConfirm();
-                setConfirmModalData(null);
-              }}
-            >
-              <Text style={styles.confirmModalConfirmText}>
-                {confirmModalData?.confirmText}
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </View>
-    </Modal>
-  );
+  // AlertDialog components are rendered inline below
 
   if (isLoading) {
     return (
@@ -595,7 +523,8 @@ export default function GerenciamentoUsuariosScreen() {
       </ScrollView>
 
       <FilterModal />
-      <ConfirmModal />
+      {DeleteAlertDialog}
+      {FeedbackAlertDialog}
     </SafeAreaView>
   );
 }
