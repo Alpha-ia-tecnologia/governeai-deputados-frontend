@@ -11,6 +11,7 @@ import {
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Calendar, Clock } from 'lucide-react-native';
 import Colors from '@/constants/colors';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface DateTimeInputProps {
   label: string;
@@ -29,6 +30,7 @@ export function DateTimeInput({
   required = false,
   placeholder,
 }: DateTimeInputProps) {
+  const { colors } = useTheme();
   const [showPicker, setShowPicker] = useState(false);
   const [selectedValue, setSelectedValue] = useState(new Date());
 
@@ -103,14 +105,14 @@ export function DateTimeInput({
           }}
           required={required}
           style={{
-            backgroundColor: Colors.light.card,
+            backgroundColor: colors.card,
             borderWidth: 1,
             borderStyle: 'solid',
-            borderColor: Colors.light.border,
+            borderColor: colors.border,
             borderRadius: 12,
             padding: 12,
             fontSize: 16,
-            color: Colors.light.text,
+            color: colors.text,
             width: '100%',
             minHeight: 48,
             cursor: 'pointer',
@@ -127,22 +129,22 @@ export function DateTimeInput({
   // Renderização para Mobile (iOS/Android)
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>
+      <Text style={[styles.label, { color: colors.text }]}>
         {label} {required && <Text style={styles.required}>*</Text>}
       </Text>
-      <View style={styles.inputContainer}>
+      <View style={[styles.inputContainer, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
         <TextInput
-          style={styles.textInput}
+          style={[styles.textInput, { color: colors.text }]}
           value={value}
           onChangeText={onChange}
           placeholder={inputPlaceholder}
-          placeholderTextColor={Colors.light.textSecondary}
+          placeholderTextColor={colors.textSecondary}
         />
         <TouchableOpacity
           style={styles.iconButton}
           onPress={() => setShowPicker(true)}
         >
-          <Icon color={Colors.light.primary} size={20} />
+          <Icon color={colors.primary} size={20} />
         </TouchableOpacity>
       </View>
 
@@ -154,16 +156,16 @@ export function DateTimeInput({
           animationType="slide"
         >
           <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-              <View style={styles.modalHeader}>
+            <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
+              <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
                 <TouchableOpacity onPress={() => setShowPicker(false)}>
-                  <Text style={styles.modalCancel}>Cancelar</Text>
+                  <Text style={[styles.modalCancel, { color: colors.textSecondary }]}>Cancelar</Text>
                 </TouchableOpacity>
-                <Text style={styles.modalTitle}>
+                <Text style={[styles.modalTitle, { color: colors.text }]}>
                   {mode === 'date' ? 'Selecione a Data' : 'Selecione a Hora'}
                 </Text>
                 <TouchableOpacity onPress={confirmIOSValue}>
-                  <Text style={styles.modalConfirm}>Confirmar</Text>
+                  <Text style={[styles.modalConfirm, { color: colors.primary }]}>Confirmar</Text>
                 </TouchableOpacity>
               </View>
               <DateTimePicker

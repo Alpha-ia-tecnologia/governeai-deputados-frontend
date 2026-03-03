@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
     View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput,
     Modal, Platform, ActivityIndicator,
@@ -14,6 +14,8 @@ import { useData } from "@/contexts/DataContext";
 import { GabineteTask, TaskStatus, TaskPriority } from "@/types";
 import { useAlertDialog } from "@/components/Advanced";
 import { Typography, Spacing, Radius } from "@/constants/colors";
+import { DateTimeInput } from "@/components/DateTimeInput";
+import { usersService } from "@/services/users.service";
 
 const STATUS_CFG: Record<TaskStatus, { label: string; color: string; icon: any }> = {
     pendente: { label: "Pendente", color: "#f59e0b", icon: Circle },
@@ -24,6 +26,20 @@ const STATUS_CFG: Record<TaskStatus, { label: string; color: string; icon: any }
 const PRIO_CFG: Record<TaskPriority, { label: string; color: string }> = {
     baixa: { label: "Baixa", color: "#6b7280" }, media: { label: "Média", color: "#f59e0b" },
     alta: { label: "Alta", color: "#f97316" }, urgente: { label: "Urgente", color: "#ef4444" },
+};
+
+const formatToBR = (dateStr: string) => {
+    if (!dateStr || !dateStr.includes("-")) return dateStr;
+    const parts = dateStr.split("-");
+    if (parts.length === 3 && parts[0].length === 4) return `${parts[2]}-${parts[1]}-${parts[0]}`;
+    return dateStr;
+};
+
+const formatToISO = (dateStr: string) => {
+    if (!dateStr || !dateStr.includes("-")) return dateStr;
+    const parts = dateStr.split("-");
+    if (parts.length === 3 && parts[2].length === 4) return `${parts[2]}-${parts[1]}-${parts[0]}`;
+    return dateStr;
 };
 
 const STATUS_ORDER: TaskStatus[] = ["pendente", "em_andamento", "concluida", "atrasada"];
@@ -41,6 +57,22 @@ export default function ManageTasksScreen() {
     const { showAlert: showDeleteAlert, AlertDialogComponent: DeleteAlertDialog } = useAlertDialog();
     const { showAlert: showFeedbackAlert, AlertDialogComponent: FeedbackAlertDialog } = useAlertDialog();
 
+    // Load system users for assignee dropdown
+    const [systemUsers, setSystemUsers] = useState<{ id: string; name: string }[]>([]);
+    useEffect(() => {
+        usersService.getAll().then(users => {
+            setSystemUsers(users.map(u => ({ id: u.id, name: u.name })));
+        }).catch(() => setSystemUsers([]));
+    }, []);
+
+    // Combine staff + system users, deduplicated by id
+    const allAssignees = useMemo(() => {
+        const map = new Map<string, { id: string; name: string }>();
+        systemUsers.forEach(u => map.set(u.id, u));
+        staff.forEach(s => map.set(s.id, { id: s.id, name: s.name }));
+        return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
+    }, [staff, systemUsers]);
+
     const [viewMode, setViewMode] = useState<"kanban" | "list">("kanban");
     const [showModal, setShowModal] = useState(false);
     const [editing, setEditing] = useState<GabineteTask | null>(null);
@@ -50,6 +82,8 @@ export default function ManageTasksScreen() {
     const [title, setTitle] = useState("");
     const [description, setDescription] = useState("");
     const [assigneeId, setAssigneeId] = useState("");
+    const [customAssigneeName, setCustomAssigneeName] = useState("");
+    const [showAssigneeDropdown, setShowAssigneeDropdown] = useState(false);
     const [priority, setPriority] = useState<TaskPriority>("media");
     const [status, setStatus] = useState<TaskStatus>("pendente");
     const [dueDate, setDueDate] = useState("");
@@ -57,16 +91,25 @@ export default function ManageTasksScreen() {
     const [draggingTaskId, setDraggingTaskId] = useState<string | null>(null);
     const [dragOverColumn, setDragOverColumn] = useState<TaskStatus | null>(null);
 
-    const resetForm = () => { setTitle(""); setDescription(""); setAssigneeId(""); setPriority("media"); setStatus("pendente"); setDueDate(""); setTaskColor(""); setEditing(null); };
+    const resetForm = () => { setTitle(""); setDescription(""); setAssigneeId(""); setCustomAssigneeName(""); setShowAssigneeDropdown(false); setPriority("media"); setStatus("pendente"); setDueDate(""); setTaskColor(""); setEditing(null); };
     const openAdd = (forStatus?: TaskStatus) => { resetForm(); if (forStatus) setStatus(forStatus); setShowModal(true); };
-    const openEdit = (t: GabineteTask) => { setEditing(t); setTitle(t.title); setDescription(t.description); setAssigneeId(t.assigneeId); setPriority(t.priority); setStatus(t.status); setDueDate(t.dueDate || ""); setTaskColor(t.color || ""); setShowModal(true); };
+    const openEdit = (t: GabineteTask) => {
+        setEditing(t); setTitle(t.title); setDescription(t.description); setPriority(t.priority); setStatus(t.status); setDueDate(formatToBR(t.dueDate || "")); setTaskColor(t.color || "");
+        const isKnownStaff = allAssignees.some(s => s.id === t.assigneeId);
+        if (isKnownStaff) { setAssigneeId(t.assigneeId); setCustomAssigneeName(""); }
+        else if (t.assigneeName && t.assigneeName !== "Não atribuído") { setAssigneeId("__outro__"); setCustomAssigneeName(t.assigneeName); }
+        else { setAssigneeId(""); setCustomAssigneeName(""); }
+        setShowAssigneeDropdown(false); setShowModal(true);
+    };
 
     const handleSave = async () => {
         if (!title.trim()) { showFeedbackAlert({ title: "Campo obrigatório", description: "O título é obrigatório.", confirmText: "Entendi", variant: "warning", showCancel: false }); return; }
         setSaving(true);
         try {
-            const assignee = staff.find(s => s.id === assigneeId);
-            const data: any = { title: title.trim(), description: description.trim(), assigneeId: assigneeId || "", assigneeName: assignee?.name || "Não atribuído", priority, status, dueDate: dueDate || new Date().toISOString().split("T")[0], color: taskColor || undefined };
+            const assignee = allAssignees.find(s => s.id === assigneeId);
+            const resolvedName = assigneeId === "__outro__" ? (customAssigneeName.trim() || "Outro") : (assignee?.name || "Não atribuído");
+            const resolvedId = assigneeId === "__outro__" ? "" : (assigneeId || "");
+            const data: any = { title: title.trim(), description: description.trim(), assigneeId: resolvedId, assigneeName: resolvedName, priority, status, dueDate: formatToISO(dueDate) || new Date().toISOString().split("T")[0], color: taskColor || undefined };
             if (editing) { await updateGabineteTask(editing.id, data); showFeedbackAlert({ title: "Tarefa atualizada!", description: "A tarefa foi atualizada com sucesso.", confirmText: "OK", variant: "success", showCancel: false }); }
             else { await addGabineteTask(data); showFeedbackAlert({ title: "Tarefa criada!", description: "A tarefa foi criada com sucesso.", confirmText: "OK", variant: "success", showCancel: false }); }
             setShowModal(false); resetForm();
@@ -497,16 +540,51 @@ export default function ManageTasksScreen() {
                             </View>
 
                             <Text style={[s.label, { color: colors.text }]}>Responsável</Text>
-                            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                                <TouchableOpacity onPress={() => setAssigneeId("")} style={[s.chip, { backgroundColor: !assigneeId ? colors.primary : colors.backgroundSecondary }]}>
-                                    <Text style={{ color: !assigneeId ? "#fff" : colors.text, fontSize: 13 }}>Nenhum</Text>
-                                </TouchableOpacity>
-                                {staff.filter(st => st.active).map(st => (
-                                    <TouchableOpacity key={st.id} onPress={() => setAssigneeId(st.id)} style={[s.chip, { backgroundColor: assigneeId === st.id ? colors.primary : colors.backgroundSecondary }]}>
-                                        <Text style={{ color: assigneeId === st.id ? "#fff" : colors.text, fontSize: 13 }}>{st.name}</Text>
-                                    </TouchableOpacity>
-                                ))}
-                            </ScrollView>
+                            <TouchableOpacity
+                                onPress={() => setShowAssigneeDropdown(!showAssigneeDropdown)}
+                                style={[s.input, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border, flexDirection: "row", alignItems: "center", justifyContent: "space-between" }]}
+                            >
+                                <Text style={{ color: assigneeId ? colors.text : colors.textSecondary, fontSize: 14 }}>
+                                    {assigneeId === "__outro__" ? "Outro" : assigneeId ? (allAssignees.find(st => st.id === assigneeId)?.name || "Selecionar") : "Selecionar responsável"}
+                                </Text>
+                                <ChevronRight color={colors.textSecondary} size={16} style={{ transform: [{ rotate: showAssigneeDropdown ? '90deg' : '0deg' }] }} />
+                            </TouchableOpacity>
+                            {showAssigneeDropdown && (
+                                <View style={{ backgroundColor: colors.backgroundSecondary, borderRadius: 12, borderWidth: 1, borderColor: colors.border, marginTop: 4, maxHeight: 200 }}>
+                                    <ScrollView nestedScrollEnabled showsVerticalScrollIndicator={false}>
+                                        <TouchableOpacity
+                                            onPress={() => { setAssigneeId(""); setCustomAssigneeName(""); setShowAssigneeDropdown(false); }}
+                                            style={{ padding: 12, borderBottomWidth: 1, borderBottomColor: colors.border + "40", backgroundColor: !assigneeId ? colors.primary + "15" : "transparent" }}
+                                        >
+                                            <Text style={{ color: !assigneeId ? colors.primary : colors.text, fontSize: 14, fontWeight: !assigneeId ? "600" : "400" }}>Nenhum</Text>
+                                        </TouchableOpacity>
+                                        {allAssignees.map(st => (
+                                            <TouchableOpacity
+                                                key={st.id}
+                                                onPress={() => { setAssigneeId(st.id); setCustomAssigneeName(""); setShowAssigneeDropdown(false); }}
+                                                style={{ padding: 12, borderBottomWidth: 1, borderBottomColor: colors.border + "40", backgroundColor: assigneeId === st.id ? colors.primary + "15" : "transparent" }}
+                                            >
+                                                <Text style={{ color: assigneeId === st.id ? colors.primary : colors.text, fontSize: 14, fontWeight: assigneeId === st.id ? "600" : "400" }}>{st.name}</Text>
+                                            </TouchableOpacity>
+                                        ))}
+                                        <TouchableOpacity
+                                            onPress={() => { setAssigneeId("__outro__"); setShowAssigneeDropdown(false); }}
+                                            style={{ padding: 12, backgroundColor: assigneeId === "__outro__" ? colors.primary + "15" : "transparent" }}
+                                        >
+                                            <Text style={{ color: assigneeId === "__outro__" ? colors.primary : "#f59e0b", fontSize: 14, fontWeight: "600" }}>+ Outro</Text>
+                                        </TouchableOpacity>
+                                    </ScrollView>
+                                </View>
+                            )}
+                            {assigneeId === "__outro__" && (
+                                <TextInput
+                                    style={[s.input, { backgroundColor: colors.backgroundSecondary, color: colors.text, borderColor: colors.border, marginTop: 8 }]}
+                                    placeholder="Nome do responsável"
+                                    placeholderTextColor={colors.textSecondary}
+                                    value={customAssigneeName}
+                                    onChangeText={setCustomAssigneeName}
+                                />
+                            )}
 
                             <Text style={[s.label, { color: colors.text }]}>Prioridade</Text>
                             <View style={s.chipRow}>
@@ -526,8 +604,15 @@ export default function ManageTasksScreen() {
                                 ))}
                             </View>
 
-                            <Text style={[s.label, { color: colors.text }]}>Prazo</Text>
-                            <TextInput style={[s.input, { backgroundColor: colors.backgroundSecondary, color: colors.text, borderColor: colors.border }]} placeholder="AAAA-MM-DD" placeholderTextColor={colors.textSecondary} value={dueDate} onChangeText={setDueDate} />
+                            <View style={{ marginTop: 14 }}>
+                                <DateTimeInput
+                                    label="Prazo"
+                                    value={dueDate}
+                                    onChange={setDueDate}
+                                    mode="date"
+                                    placeholder="DD-MM-AAAA"
+                                />
+                            </View>
                         </ScrollView>
                         <View style={s.mFooter}>
                             <TouchableOpacity onPress={() => { setShowModal(false); resetForm(); }} style={[s.cancelBtn, { borderColor: colors.border }]}>
