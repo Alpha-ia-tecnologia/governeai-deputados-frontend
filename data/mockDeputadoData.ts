@@ -366,16 +366,19 @@ export function getMockDeputadoComparison(candidate1Number: string, candidate2Nu
     const c2 = candidates.find(c => c.number === candidate2Number);
     if (!c1 || !c2) return null;
 
-    const zones = getMockDeputadoZones();
-    const comparison = zones.map(zone => {
-        const v1 = Math.floor(c1.totalVotes / 48 * (0.3 + Math.random() * 1.4));
-        const v2 = Math.floor(c2.totalVotes / 48 * (0.3 + Math.random() * 1.4));
-        return { zone, candidate1Votes: v1, candidate2Votes: v2, difference: v1 - v2, winner: v1 > v2 ? 1 : 2 };
+    // Usar cidades reais para a comparação
+    const cities = selectedYear === 2018 ? ADELMO_CITIES_2018 : ADELMO_CITIES_2022;
+    const topCities = cities.slice(0, 15); // Top 15 cidades para comparação
+
+    const comparison = topCities.map(cityData => {
+        const v1 = Math.floor(c1.totalVotes / cities.length * (0.3 + Math.random() * 1.4));
+        const v2 = Math.floor(c2.totalVotes / cities.length * (0.3 + Math.random() * 1.4));
+        return { city: cityData.name, candidate1Votes: v1, candidate2Votes: v2, difference: v1 - v2, winner: v1 > v2 ? 1 : (v2 > v1 ? 2 : 0) };
     });
 
     return {
-        candidate1: { number: c1.number, name: c1.name, party: c1.party, totalVotes: c1.totalVotes, zonesWon: comparison.filter(c => c.winner === 1).length },
-        candidate2: { number: c2.number, name: c2.name, party: c2.party, totalVotes: c2.totalVotes, zonesWon: comparison.filter(c => c.winner === 2).length },
+        candidate1: { number: c1.number, name: c1.name, party: c1.party, totalVotes: c1.totalVotes, citiesWon: comparison.filter(c => c.winner === 1).length },
+        candidate2: { number: c2.number, name: c2.name, party: c2.party, totalVotes: c2.totalVotes, citiesWon: comparison.filter(c => c.winner === 2).length },
         comparison,
         overallWinner: c1.totalVotes > c2.totalVotes ? 1 : 2,
     };

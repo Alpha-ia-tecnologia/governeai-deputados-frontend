@@ -1915,7 +1915,7 @@ export default function ElectionAnalysisScreen() {
                                 borderColor: '#1E3A5F15',
                             }}>
                                 <Text style={{ fontSize: 13, fontWeight: '600', color: '#374151', textAlign: 'center' }}>
-                                    Diferen\u00e7a: {formatNumber(Math.abs(deputadoComparison.candidate1.totalVotes - deputadoComparison.candidate2.totalVotes))} votos
+                                    Diferença: {formatNumber(Math.abs(deputadoComparison.candidate1.totalVotes - deputadoComparison.candidate2.totalVotes))} votos
                                 </Text>
                             </View>
 
