@@ -65,6 +65,7 @@ function RootLayoutNav() {
     if (pathname.includes("/agenda")) return "/agenda";
     if (pathname.includes("/manage-cities")) return "/manage-cities";
     if (pathname.includes("/election-analysis")) return "/election-analysis";
+    if (pathname.includes("/chat")) return "/chat";
     if (pathname.includes("/settings")) return "/settings";
     return "/";
   };
@@ -89,6 +90,7 @@ function RootLayoutNav() {
       "/manage-political-contacts": "/manage-political-contacts",
       "/manage-ceap": "/manage-ceap",
       "/manage-cities": "/manage-cities",
+      "/chat": "/chat",
     };
     const targetRoute = routeMap[route] || route;
     expoRouter.push(targetRoute as any);
@@ -145,6 +147,7 @@ function RootLayoutNav() {
           <Stack.Screen name="profile" options={{ headerShown: false }} />
           <Stack.Screen name="system-preferences" options={{ headerShown: false }} />
           <Stack.Screen name="admin-panel" options={{ headerShown: false }} />
+          <Stack.Screen name="chat" options={{ headerShown: false }} />
           <Stack.Screen name="add-voter" options={{ headerShown: false }} />
           <Stack.Screen name="edit-voter" options={{ headerShown: false }} />
           <Stack.Screen name="add-visit" options={{ headerShown: false }} />

@@ -22,6 +22,7 @@ import {
     ClipboardList,
     Handshake,
     MapPin,
+    MessageCircle,
 } from 'lucide-react-native';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -51,6 +52,7 @@ const navItems: NavItem[] = [
     { id: 'agenda', label: 'Agenda', icon: Calendar, route: '/agenda' },
     { id: 'cities', label: 'Cidades', icon: MapPin, route: '/manage-cities' },
     { id: 'analytics', label: 'Análise Eleitoral', icon: BarChart3, route: '/election-analysis' },
+    { id: 'chat', label: 'Chat', icon: MessageCircle, route: '/chat' },
 ];
 
 const systemNavItems: NavItem[] = [
