@@ -19,18 +19,6 @@ import {
   Moon,
   Smartphone,
   Check,
-  BarChart3,
-  Building2,
-  FileText,
-  Users,
-  ClipboardList,
-  Vote,
-  UserPlus,
-  Receipt,
-  Gavel,
-  Calendar,
-  MapPin,
-  Handshake,
 } from "lucide-react-native";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme, ThemeMode } from "@/contexts/ThemeContext";
@@ -59,86 +47,6 @@ export default function SettingsScreen() {
   const canManageUsers = user?.role === "admin" || user?.role === "vereador" || user?.role === "assessor";
 
   const menuCategories: MenuCategory[] = [
-    {
-      title: "Gabinete",
-      items: [
-        {
-          icon: Users,
-          title: "Equipe do Gabinete",
-          description: "Assessores e cargos",
-          onPress: () => router.push("/manage-staff"),
-        },
-        {
-          icon: ClipboardList,
-          title: "Tarefas",
-          description: "Atividades e demandas",
-          onPress: () => router.push("/manage-tasks"),
-        },
-      ],
-    },
-    {
-      title: "Legislativo",
-      items: [
-        {
-          icon: Gavel,
-          title: "Projetos de Lei",
-          description: "Proposições legislativas",
-          onPress: () => router.push("/manage-bills"),
-        },
-        {
-          icon: Vote,
-          title: "Votações",
-          description: "Registro de votos",
-          onPress: () => router.push("/manage-votes"),
-        },
-        {
-          icon: FileText,
-          title: "Ofícios e Requerimentos",
-          description: "Documentos oficiais",
-          onPress: () => router.push("/manage-requests"),
-        },
-      ],
-    },
-    {
-      title: "Político",
-      items: [
-        {
-          icon: Handshake,
-          title: "Contatos Políticos",
-          description: "CRM político",
-          onPress: () => router.push("/manage-political-contacts"),
-        },
-        {
-          icon: Receipt,
-          title: "CEAP - Despesas",
-          description: "Cota parlamentar",
-          onPress: () => router.push("/manage-ceap"),
-        },
-      ],
-    },
-    {
-      title: "Mandato",
-      items: [
-        {
-          icon: Calendar,
-          title: "Agenda",
-          description: "Compromissos e eventos",
-          onPress: () => router.push("/(tabs)/agenda" as any),
-        },
-        {
-          icon: MapPin,
-          title: "Gestão de Cidades",
-          description: "Municípios de atuação",
-          onPress: () => router.push("/manage-cities"),
-        },
-        {
-          icon: BarChart3,
-          title: "Análise Eleitoral",
-          description: "Dados e estatísticas",
-          onPress: () => router.push("/election-analysis"),
-        },
-      ],
-    },
     {
       title: "Sistema",
       items: [
