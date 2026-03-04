@@ -34,19 +34,19 @@ export function DateTimeInput({
   const [showPicker, setShowPicker] = useState(false);
   const [selectedValue, setSelectedValue] = useState(new Date());
 
-  // Converter formato DD-MM-AAAA para AAAA-MM-DD (HTML5)
+  // Converter formato DD/MM/AAAA para AAAA-MM-DD (HTML5)
   const convertDateToHTML5 = (date: string) => {
     if (!date) return '';
-    const parts = date.split('-');
+    const parts = date.split('/');
     if (parts.length !== 3) return '';
     return `${parts[2]}-${parts[1]}-${parts[0]}`;
   };
 
-  // Converter formato AAAA-MM-DD (HTML5) para DD-MM-AAAA
+  // Converter formato AAAA-MM-DD (HTML5) para DD/MM/AAAA
   const convertDateFromHTML5 = (date: string) => {
     if (!date) return '';
     const [year, month, day] = date.split('-');
-    return `${day}-${month}-${year}`;
+    return `${day}/${month}/${year}`;
   };
 
   const handleNativeChange = (event: any, date?: Date) => {
@@ -57,7 +57,7 @@ export function DateTimeInput({
           const year = date.getFullYear();
           const month = String(date.getMonth() + 1).padStart(2, '0');
           const day = String(date.getDate()).padStart(2, '0');
-          onChange(`${day}-${month}-${year}`);
+          onChange(`${day}/${month}/${year}`);
         } else {
           const hours = String(date.getHours()).padStart(2, '0');
           const minutes = String(date.getMinutes()).padStart(2, '0');
@@ -74,7 +74,7 @@ export function DateTimeInput({
       const year = selectedValue.getFullYear();
       const month = String(selectedValue.getMonth() + 1).padStart(2, '0');
       const day = String(selectedValue.getDate()).padStart(2, '0');
-      onChange(`${day}-${month}-${year}`);
+      onChange(`${day}/${month}/${year}`);
     } else {
       const hours = String(selectedValue.getHours()).padStart(2, '0');
       const minutes = String(selectedValue.getMinutes()).padStart(2, '0');
@@ -84,7 +84,7 @@ export function DateTimeInput({
   };
 
   const Icon = mode === 'date' ? Calendar : Clock;
-  const inputPlaceholder = placeholder || (mode === 'date' ? 'DD-MM-AAAA' : 'HH:MM');
+  const inputPlaceholder = placeholder || (mode === 'date' ? 'DD/MM/AAAA' : 'HH:MM');
 
   // Renderização para Web
   if (Platform.OS === 'web') {

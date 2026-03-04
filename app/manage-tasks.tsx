@@ -31,13 +31,13 @@ const PRIO_CFG: Record<TaskPriority, { label: string; color: string }> = {
 const formatToBR = (dateStr: string) => {
     if (!dateStr || !dateStr.includes("-")) return dateStr;
     const parts = dateStr.split("-");
-    if (parts.length === 3 && parts[0].length === 4) return `${parts[2]}-${parts[1]}-${parts[0]}`;
+    if (parts.length === 3 && parts[0].length === 4) return `${parts[2]}/${parts[1]}/${parts[0]}`;
     return dateStr;
 };
 
 const formatToISO = (dateStr: string) => {
-    if (!dateStr || !dateStr.includes("-")) return dateStr;
-    const parts = dateStr.split("-");
+    if (!dateStr || !dateStr.includes("/")) return dateStr;
+    const parts = dateStr.split("/");
     if (parts.length === 3 && parts[2].length === 4) return `${parts[2]}-${parts[1]}-${parts[0]}`;
     return dateStr;
 };
@@ -239,7 +239,7 @@ export default function ManageTasksScreen() {
                         <View style={k.metaItem}>
                             <Calendar color={colors.textSecondary} size={11} />
                             <Text style={[k.metaText, { color: colors.textSecondary }]}>
-                                {new Date(t.dueDate).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })}
+                                {new Date(t.dueDate).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}
                             </Text>
                         </View>
                     )}
@@ -368,7 +368,7 @@ export default function ManageTasksScreen() {
                         <Text style={{ color: colors.textSecondary, fontSize: 12 }}>👤 {t.assigneeName || "—"}</Text>
                         {t.dueDate && (
                             <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
-                                📅 {new Date(t.dueDate).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })}
+                                📅 {new Date(t.dueDate).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}
                             </Text>
                         )}
                     </View>
@@ -610,7 +610,7 @@ export default function ManageTasksScreen() {
                                     value={dueDate}
                                     onChange={setDueDate}
                                     mode="date"
-                                    placeholder="DD-MM-AAAA"
+                                    placeholder="DD/MM/AAAA"
                                 />
                             </View>
                         </ScrollView>

@@ -233,7 +233,7 @@ export default function GabineteScreen() {
                                     </View>
                                     {t.dueDate && (
                                         <Text style={[styles.taskDueDate, { color: colors.textSecondary }]}>
-                                            {new Date(t.dueDate).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })}
+                                            {new Date(t.dueDate).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}
                                         </Text>
                                     )}
                                 </View>

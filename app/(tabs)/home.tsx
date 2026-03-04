@@ -173,7 +173,7 @@ export default function HomeScreen() {
         data.push({
           label: date.toLocaleDateString("pt-BR", {
             day: "2-digit",
-            month: "short",
+            month: "2-digit",
           }),
           value: voterCount,
           secondaryValue: visitCount,

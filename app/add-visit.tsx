@@ -21,12 +21,12 @@ export default function AddVisitScreen() {
   const { user } = useAuth();
   const { showToast } = useToast();
 
-  // Inicializar data no formato DD-MM-AAAA
+  // Inicializar data no formato DD/MM/AAAA
   const today = new Date();
   const day = String(today.getDate()).padStart(2, '0');
   const month = String(today.getMonth() + 1).padStart(2, '0');
   const year = today.getFullYear();
-  const [date, setDate] = useState(`${day}-${month}-${year}`);
+  const [date, setDate] = useState(`${day}/${month}/${year}`);
   const [objective, setObjective] = useState("");
   const [result, setResult] = useState("");
   const [nextSteps, setNextSteps] = useState("");
@@ -70,8 +70,8 @@ export default function AddVisitScreen() {
         return;
       }
 
-      // Converter data de DD-MM-AAAA para AAAA-MM-DD
-      const [day, month, year] = date.split('-');
+      // Converter data de DD/MM/AAAA para AAAA-MM-DD
+      const [day, month, year] = date.split('/');
       const dateISO = `${year}-${month}-${day}`;
 
       await addVisit({
@@ -132,7 +132,7 @@ export default function AddVisitScreen() {
                 style={styles.dateInput}
                 value={date}
                 onChangeText={setDate}
-                placeholder="DD-MM-AAAA"
+                placeholder="DD/MM/AAAA"
                 placeholderTextColor={Colors.light.textSecondary}
               />
               <Calendar color={Colors.light.primary} size={20} />

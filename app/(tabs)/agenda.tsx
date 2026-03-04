@@ -117,7 +117,7 @@ export default function AgendaScreen() {
     const day = String(today.getDate()).padStart(2, '0');
     const month = String(today.getMonth() + 1).padStart(2, '0');
     const year = today.getFullYear();
-    return `${day}-${month}-${year}`;
+    return `${day}/${month}/${year}`;
   };
 
   const getInitialTime = () => {
@@ -127,10 +127,10 @@ export default function AgendaScreen() {
     return `${hours}:${minutes}`;
   };
 
-  // Função auxiliar para converter data DD-MM-AAAA para AAAA-MM-DD (formato HTML5)
+  // Função auxiliar para converter data DD/MM/AAAA para AAAA-MM-DD (formato HTML5)
   const convertDateToHTML5 = (date: string) => {
     if (!date) return '';
-    const parts = date.split('-');
+    const parts = date.split('/');
     if (parts.length !== 3) return '';
     return `${parts[2]}-${parts[1]}-${parts[0]}`;
   };
@@ -165,14 +165,14 @@ export default function AgendaScreen() {
     }
 
     // Validar formato da data
-    const dateParts = formData.date.split('-');
+    const dateParts = formData.date.split('/');
     console.log('dateParts:', dateParts);
 
     if (dateParts.length !== 3) {
       console.log('Validation failed - date format incorrect');
       showFeedbackAlert({
         title: "Data inválida",
-        description: "Use o formato DD-MM-AAAA para a data.",
+        description: "Use o formato DD/MM/AAAA para a data.",
         confirmText: "Entendi",
         variant: "warning",
         showCancel: false,
@@ -185,7 +185,7 @@ export default function AgendaScreen() {
       console.log('Validation failed - date parts invalid');
       showFeedbackAlert({
         title: "Data inválida",
-        description: "Use o formato DD-MM-AAAA para a data.",
+        description: "Use o formato DD/MM/AAAA para a data.",
         confirmText: "Entendi",
         variant: "warning",
         showCancel: false,
@@ -200,7 +200,7 @@ export default function AgendaScreen() {
       minutes,
     }));
 
-    // Converter data de DD-MM-AAAA para AAAA-MM-DD
+    // Converter data de DD/MM/AAAA para AAAA-MM-DD
     const dateISO = `${year}-${month}-${day}`;
     console.log('dateISO:', dateISO);
 
@@ -334,7 +334,7 @@ export default function AgendaScreen() {
         const year = date.getFullYear();
         const month = String(date.getMonth() + 1).padStart(2, '0');
         const day = String(date.getDate()).padStart(2, '0');
-        setFormData({ ...formData, date: `${day}-${month}-${year}` });
+        setFormData({ ...formData, date: `${day}/${month}/${year}` });
       }
     } else if (date) {
       setSelectedDate(date);
@@ -345,7 +345,7 @@ export default function AgendaScreen() {
     const year = selectedDate.getFullYear();
     const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
     const day = String(selectedDate.getDate()).padStart(2, '0');
-    setFormData({ ...formData, date: `${day}-${month}-${year}` });
+    setFormData({ ...formData, date: `${day}/${month}/${year}` });
     setShowDatePicker(false);
   };
 
@@ -457,7 +457,7 @@ export default function AgendaScreen() {
       const day = String(selectedDay.getDate()).padStart(2, '0');
       const month = String(selectedDay.getMonth() + 1).padStart(2, '0');
       const year = selectedDay.getFullYear();
-      setFormData(prev => ({ ...prev, date: `${day}-${month}-${year}` }));
+      setFormData(prev => ({ ...prev, date: `${day}/${month}/${year}` }));
     }
     setShowAddModal(true);
   };
@@ -607,7 +607,7 @@ export default function AgendaScreen() {
                     <Text style={calStyles.dayModalFullDate}>
                       {selectedDay?.toLocaleDateString('pt-BR', {
                         day: '2-digit',
-                        month: 'long',
+                        month: '2-digit',
                         year: 'numeric',
                       })}
                     </Text>
@@ -749,7 +749,7 @@ export default function AgendaScreen() {
                           <Text style={styles.detailText}>
                             {appointmentDate.toLocaleDateString("pt-BR", {
                               day: "2-digit",
-                              month: "long",
+                              month: "2-digit",
                               year: "numeric",
                             })}
                           </Text>
@@ -975,7 +975,7 @@ export default function AgendaScreen() {
                       style={styles.dateTextInput}
                       value={formData.date}
                       onChangeText={(text) => setFormData({ ...formData, date: text })}
-                      placeholder="DD-MM-AAAA"
+                      placeholder="DD/MM/AAAA"
                       placeholderTextColor={Colors.light.textSecondary}
                     />
                     <TouchableOpacity

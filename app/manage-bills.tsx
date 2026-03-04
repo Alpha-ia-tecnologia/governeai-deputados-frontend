@@ -4,6 +4,7 @@ import { ArrowLeft, Plus, FileText, Edit2, Trash2, X, Search, Clock, CircleCheck
 import { router } from "expo-router";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useData } from "@/contexts/DataContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { LegislativeBill, BillType, BillStatus, BillAuthorship } from "@/types";
 import { useAlertDialog } from "@/components/Advanced";
 import { Typography, Spacing, Radius } from "@/constants/colors";
@@ -25,6 +26,7 @@ const AUTHORS: { v: BillAuthorship; l: string }[] = [
 export default function ManageBillsScreen() {
     const { colors } = useTheme();
     const { bills: realBills, addBill, updateBill, deleteBill } = useData();
+    const { user } = useAuth();
     const bills = realBills;
     const { showAlert: showDeleteAlert, AlertDialogComponent: DeleteAlertDialog } = useAlertDialog();
     const { showAlert: showFeedbackAlert, AlertDialogComponent: FeedbackAlertDialog } = useAlertDialog();
@@ -37,15 +39,30 @@ export default function ManageBillsScreen() {
     const [billStatus, setBillStatus] = useState<BillStatus>("em_tramitacao");
     const [presentedDate, setPresentedDate] = useState(""); const [area, setArea] = useState("");
 
+    // Converter DD/MM/AAAA para AAAA-MM-DD (ISO)
+    const convertToISO = (dateStr: string) => {
+        if (!dateStr || !dateStr.includes('/')) return dateStr;
+        const parts = dateStr.split('/');
+        if (parts.length === 3 && parts[2].length === 4) return `${parts[2]}-${parts[1]}-${parts[0]}`;
+        return dateStr;
+    };
+    // Converter AAAA-MM-DD (ISO) para DD/MM/AAAA
+    const convertFromISO = (dateStr: string) => {
+        if (!dateStr || !dateStr.includes('-')) return dateStr;
+        const parts = dateStr.split('-');
+        if (parts.length === 3 && parts[0].length === 4) return `${parts[2]}/${parts[1]}/${parts[0]}`;
+        return dateStr;
+    };
+
     const resetForm = () => { setNumber(""); setTitle(""); setSummary(""); setType("PL"); setAuthorship("proprio"); setBillStatus("em_tramitacao"); setPresentedDate(""); setArea(""); setEditing(null); };
     const openAdd = () => { resetForm(); setShowModal(true); };
-    const openEdit = (b: LegislativeBill) => { setEditing(b); setNumber(b.number); setTitle(b.title); setSummary(b.summary); setType(b.type); setAuthorship(b.authorship); setBillStatus(b.status); setPresentedDate(b.presentedDate); setArea(b.area || ""); setShowModal(true); };
+    const openEdit = (b: LegislativeBill) => { setEditing(b); setNumber(b.number); setTitle(b.title); setSummary(b.summary); setType(b.type); setAuthorship(b.authorship); setBillStatus(b.status); setPresentedDate(convertFromISO(b.presentedDate)); setArea(b.area || ""); setShowModal(true); };
 
     const handleSave = async () => {
         if (!number.trim()) { showFeedbackAlert({ title: "Campo obrigatório", description: "O número do projeto é obrigatório.", confirmText: "Entendi", variant: "warning", showCancel: false }); return; }
         setSaving(true);
         try {
-            const data: any = { number: number.trim(), title: title.trim(), summary: summary.trim(), type, authorship, status: billStatus, presentedDate: presentedDate || new Date().toISOString().split("T")[0], area: area.trim() };
+            const data: any = { number: number.trim(), title: title.trim(), summary: summary.trim(), type, authorship, status: billStatus, presentedDate: convertToISO(presentedDate) || new Date().toISOString().split("T")[0], area: area.trim(), vereadorId: user?.vereadorId || user?.id };
             if (editing) { await updateBill(editing.id, data); showFeedbackAlert({ title: "Projeto atualizado!", description: "O projeto de lei foi atualizado com sucesso.", confirmText: "OK", variant: "success", showCancel: false }); }
             else { await addBill(data); showFeedbackAlert({ title: "Projeto cadastrado!", description: "O projeto de lei foi cadastrado com sucesso.", confirmText: "OK", variant: "success", showCancel: false }); }
             setShowModal(false); resetForm();
@@ -94,7 +111,7 @@ export default function ManageBillsScreen() {
                         <View style={st.meta}>
                             <View style={[st.statusBadge, { backgroundColor: statusColor(b.status) + "20" }]}><Text style={{ color: statusColor(b.status), fontSize: 11, fontWeight: "600" }}>{statusLabel(b.status)}</Text></View>
                             <Text style={{ color: colors.textSecondary, fontSize: 12 }}>{AUTHORS.find(a => a.v === b.authorship)?.l}</Text>
-                            <Text style={{ color: colors.textSecondary, fontSize: 12 }}>📅 {b.presentedDate}</Text>
+                            <Text style={{ color: colors.textSecondary, fontSize: 12 }}>📅 {convertFromISO(b.presentedDate)}</Text>
                         </View>
                         <View style={st.actions}>
                             <TouchableOpacity onPress={() => openEdit(b)} style={[st.actBtn, { backgroundColor: colors.primary + "15" }]}><Edit2 color={colors.primary} size={16} /></TouchableOpacity>
@@ -115,7 +132,7 @@ export default function ManageBillsScreen() {
                         <Text style={[st.label, { color: colors.text }]}>Autoria</Text><View style={st.chipRow}>{AUTHORS.map(a => (<TouchableOpacity key={a.v} onPress={() => setAuthorship(a.v)} style={[st.chip, { backgroundColor: authorship === a.v ? colors.primary : colors.backgroundSecondary }]}><Text style={{ color: authorship === a.v ? "#fff" : colors.text, fontSize: 13 }}>{a.l}</Text></TouchableOpacity>))}</View>
                         <Text style={[st.label, { color: colors.text }]}>Status</Text><View style={st.chipRow}>{STATUSES.map(s => (<TouchableOpacity key={s.v} onPress={() => setBillStatus(s.v)} style={[st.chip, { backgroundColor: billStatus === s.v ? s.c + "20" : colors.backgroundSecondary, borderColor: billStatus === s.v ? s.c : colors.border }]}><Text style={{ color: billStatus === s.v ? s.c : colors.text, fontSize: 13, fontWeight: "600" }}>{s.l}</Text></TouchableOpacity>))}</View>
                         <Text style={[st.label, { color: colors.text }]}>Área</Text><TextInput style={[st.input, { backgroundColor: colors.backgroundSecondary, color: colors.text, borderColor: colors.border }]} placeholder="Saúde, Educação..." placeholderTextColor={colors.textSecondary} value={area} onChangeText={setArea} />
-                        <Text style={[st.label, { color: colors.text }]}>Data Apresentação</Text><TextInput style={[st.input, { backgroundColor: colors.backgroundSecondary, color: colors.text, borderColor: colors.border }]} placeholder="AAAA-MM-DD" placeholderTextColor={colors.textSecondary} value={presentedDate} onChangeText={setPresentedDate} />
+                        <Text style={[st.label, { color: colors.text }]}>Data Apresentação</Text>{Platform.OS === 'web' ? (<input type="date" value={convertToISO(presentedDate)} onChange={(e: any) => setPresentedDate(convertFromISO(e.target.value))} style={{ backgroundColor: colors.backgroundSecondary, borderWidth: 1, borderStyle: 'solid', borderColor: colors.border, borderRadius: 10, padding: 12, fontSize: 15, color: colors.text, width: '100%', cursor: 'pointer' } as any} />) : (<TextInput style={[st.input, { backgroundColor: colors.backgroundSecondary, color: colors.text, borderColor: colors.border }]} placeholder="DD/MM/AAAA" placeholderTextColor={colors.textSecondary} value={presentedDate} onChangeText={setPresentedDate} />)}
                     </ScrollView>
                     <View style={st.mFooter}><TouchableOpacity onPress={() => { setShowModal(false); resetForm(); }} style={[st.cancelBtn, { borderColor: colors.border }]}><Text style={[st.cancelTxt, { color: colors.textSecondary }]}>Cancelar</Text></TouchableOpacity><TouchableOpacity onPress={handleSave} disabled={saving} style={[st.saveBtn, { backgroundColor: colors.primary, opacity: saving ? 0.6 : 1 }]}>{saving ? <ActivityIndicator color="#fff" size="small" /> : <Text style={st.saveTxt}>{editing ? "Atualizar" : "Cadastrar"}</Text>}</TouchableOpacity></View>
                 </View></View>

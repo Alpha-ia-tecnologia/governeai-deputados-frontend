@@ -43,6 +43,29 @@ export default function AddProjectScreen() {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
 
+  // Converter DD/MM/AAAA para AAAA-MM-DD (ISO)
+  const convertToISO = (dateStr: string) => {
+    if (!dateStr || !dateStr.includes('/')) return dateStr;
+    const parts = dateStr.split('/');
+    if (parts.length === 3 && parts[2].length === 4) return `${parts[2]}-${parts[1]}-${parts[0]}`;
+    return dateStr;
+  };
+
+  // Converter AAAA-MM-DD (HTML5) para DD/MM/AAAA
+  const convertFromHTML5 = (dateStr: string) => {
+    if (!dateStr) return '';
+    const [year, month, day] = dateStr.split('-');
+    return `${day}/${month}/${year}`;
+  };
+
+  // Converter DD/MM/AAAA para AAAA-MM-DD (HTML5)
+  const convertToHTML5 = (dateStr: string) => {
+    if (!dateStr || !dateStr.includes('/')) return '';
+    const parts = dateStr.split('/');
+    if (parts.length !== 3) return '';
+    return `${parts[2]}-${parts[1]}-${parts[0]}`;
+  };
+
   const onDateChange = (event: any, date?: Date) => {
     if (Platform.OS === 'android') {
       setShowDatePicker(false);
@@ -51,7 +74,7 @@ export default function AddProjectScreen() {
         const year = date.getFullYear();
         const month = String(date.getMonth() + 1).padStart(2, '0');
         const day = String(date.getDate()).padStart(2, '0');
-        setProtocolDate(`${year}-${month}-${day}`);
+        setProtocolDate(`${day}/${month}/${year}`);
       }
     } else if (date) {
       setSelectedDate(date);
@@ -62,7 +85,7 @@ export default function AddProjectScreen() {
     const year = selectedDate.getFullYear();
     const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
     const day = String(selectedDate.getDate()).padStart(2, '0');
-    setProtocolDate(`${year}-${month}-${day}`);
+    setProtocolDate(`${day}/${month}/${year}`);
     setShowDatePicker(false);
   };
 
@@ -84,7 +107,7 @@ export default function AddProjectScreen() {
       if (status === "protocolado" || status === "em_tramitacao" || status === "aprovado" || status === "rejeitado") {
         timeline.push({
           id: Date.now().toString(),
-          date: protocolDate || new Date().toISOString(),
+          date: convertToISO(protocolDate) || new Date().toISOString(),
           description: "Projeto protocolado",
           type: "protocolo",
         });
@@ -122,7 +145,7 @@ export default function AddProjectScreen() {
         title: title.trim(),
         summary: summary.trim(),
         fullText: fullText.trim() || undefined,
-        protocolDate: protocolDate.trim() || new Date().toISOString(),
+        protocolDate: convertToISO(protocolDate.trim()) || new Date().toISOString(),
         status,
         timeline,
         pdfUrl: pdfUrl.trim() || undefined,
@@ -208,20 +231,43 @@ export default function AddProjectScreen() {
           </View>
 
           <View style={styles.fieldGroup}>
-            <Text style={styles.label}>Data de Protocolo</Text>
-            <TouchableOpacity
-              style={styles.dateButton}
-              onPress={() => setShowDatePicker(true)}
-            >
-              <Text
-                style={[
-                  styles.dateText,
-                  !protocolDate && styles.datePlaceholder,
-                ]}
+            <Text style={styles.label}>Data Apresentação</Text>
+            {Platform.OS === 'web' ? (
+              <input
+                type="date"
+                value={convertToHTML5(protocolDate)}
+                onChange={(e: any) => {
+                  setProtocolDate(convertFromHTML5(e.target.value));
+                }}
+                style={{
+                  backgroundColor: Colors.light.card,
+                  borderWidth: 1,
+                  borderStyle: 'solid',
+                  borderColor: Colors.light.border,
+                  borderRadius: 8,
+                  padding: 12,
+                  fontSize: 16,
+                  color: Colors.light.text,
+                  width: '100%',
+                  minHeight: 48,
+                  cursor: 'pointer',
+                } as any}
+              />
+            ) : (
+              <TouchableOpacity
+                style={styles.dateButton}
+                onPress={() => setShowDatePicker(true)}
               >
-                {protocolDate || "Selecione a data"}
-              </Text>
-            </TouchableOpacity>
+                <Text
+                  style={[
+                    styles.dateText,
+                    !protocolDate && styles.datePlaceholder,
+                  ]}
+                >
+                  {protocolDate || "DD/MM/AAAA"}
+                </Text>
+              </TouchableOpacity>
+            )}
           </View>
 
           {Platform.OS === 'ios' ? (

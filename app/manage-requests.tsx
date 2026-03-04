@@ -480,7 +480,7 @@ export default function ManageRequestsScreen() {
                             <Text style={[styles.label, { color: colors.text }]}>Data</Text>
                             <TextInput
                                 style={[styles.input, { backgroundColor: colors.backgroundSecondary, color: colors.text, borderColor: colors.border }]}
-                                placeholder="YYYY-MM-DD"
+                                placeholder="DD/MM/AAAA"
                                 placeholderTextColor={colors.textSecondary}
                                 value={date}
                                 onChangeText={setDate}
@@ -489,7 +489,7 @@ export default function ManageRequestsScreen() {
                             <Text style={[styles.label, { color: colors.text }]}>Prazo (opcional)</Text>
                             <TextInput
                                 style={[styles.input, { backgroundColor: colors.backgroundSecondary, color: colors.text, borderColor: colors.border }]}
-                                placeholder="YYYY-MM-DD"
+                                placeholder="DD/MM/AAAA"
                                 placeholderTextColor={colors.textSecondary}
                                 value={deadline}
                                 onChangeText={setDeadline}

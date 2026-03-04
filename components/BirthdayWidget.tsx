@@ -340,7 +340,7 @@ export function BirthdayWidget({ voters, leaders }: BirthdayWidgetProps) {
                                             <Text style={[styles.birthdayInfoValue, { color: colors.text }]}>
                                                 {new Date(selectedPerson.birthDate).toLocaleDateString("pt-BR", {
                                                     day: "2-digit",
-                                                    month: "long",
+                                                    month: "2-digit",
                                                     year: "numeric"
                                                 })}
                                             </Text>
