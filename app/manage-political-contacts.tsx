@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal, Platform, ActivityIndicator } from "react-native";
-import { ArrowLeft, Plus, UserPlus, Edit2, Trash2, X, Search, Phone, MapPin, ShieldCheck, Minus, ShieldAlert } from "lucide-react-native";
+import { ArrowLeft, Plus, UserPlus, Edit2, Trash2, X, Search, Phone, MapPin, ShieldCheck, Minus, ShieldAlert, ChevronDown } from "lucide-react-native";
+import { fetchCitiesByState, IBGEMunicipio } from "@/services/ibge.service";
 import { router } from "expo-router";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useData } from "@/contexts/DataContext";
@@ -30,8 +31,40 @@ export default function ManagePoliticalContactsScreen() {
     const [party, setParty] = useState(""); const [city, setCity] = useState("");
     const [state, setState] = useState(""); const [notes, setNotes] = useState("");
     const [relationship, setRelationship] = useState<"aliado" | "neutro" | "oposicao">("neutro");
+    const [showStateDropdown, setShowStateDropdown] = useState(false);
+    const [showCityDropdown, setShowCityDropdown] = useState(false);
+    const [ibgeCities, setIbgeCities] = useState<IBGEMunicipio[]>([]);
+    const [loadingCities, setLoadingCities] = useState(false);
+    const [citySearch, setCitySearch] = useState("");
 
-    const resetForm = () => { setName(""); setPhone(""); setEmail(""); setPoliticalRole("vereador"); setParty(""); setCity(""); setState(""); setNotes(""); setRelationship("neutro"); setEditing(null); };
+    const ESTADOS_BR = [
+        { uf: 'AC', nome: 'Acre' }, { uf: 'AL', nome: 'Alagoas' }, { uf: 'AP', nome: 'Amapá' },
+        { uf: 'AM', nome: 'Amazonas' }, { uf: 'BA', nome: 'Bahia' }, { uf: 'CE', nome: 'Ceará' },
+        { uf: 'DF', nome: 'Distrito Federal' }, { uf: 'ES', nome: 'Espírito Santo' }, { uf: 'GO', nome: 'Goiás' },
+        { uf: 'MA', nome: 'Maranhão' }, { uf: 'MT', nome: 'Mato Grosso' }, { uf: 'MS', nome: 'Mato Grosso do Sul' },
+        { uf: 'MG', nome: 'Minas Gerais' }, { uf: 'PA', nome: 'Pará' }, { uf: 'PB', nome: 'Paraíba' },
+        { uf: 'PR', nome: 'Paraná' }, { uf: 'PE', nome: 'Pernambuco' }, { uf: 'PI', nome: 'Piauí' },
+        { uf: 'RJ', nome: 'Rio de Janeiro' }, { uf: 'RN', nome: 'Rio Grande do Norte' }, { uf: 'RS', nome: 'Rio Grande do Sul' },
+        { uf: 'RO', nome: 'Rondônia' }, { uf: 'RR', nome: 'Roraima' }, { uf: 'SC', nome: 'Santa Catarina' },
+        { uf: 'SP', nome: 'São Paulo' }, { uf: 'SE', nome: 'Sergipe' }, { uf: 'TO', nome: 'Tocantins' },
+    ];
+
+    useEffect(() => {
+        if (state) {
+            setLoadingCities(true);
+            fetchCitiesByState(state)
+                .then((cities) => setIbgeCities(cities))
+                .finally(() => setLoadingCities(false));
+        } else {
+            setIbgeCities([]);
+        }
+    }, [state]);
+
+    const filteredCities = ibgeCities.filter((c) =>
+        c.nome.toLowerCase().includes(citySearch.toLowerCase())
+    );
+
+    const resetForm = () => { setName(""); setPhone(""); setEmail(""); setPoliticalRole("vereador"); setParty(""); setCity(""); setState(""); setNotes(""); setRelationship("neutro"); setEditing(null); setShowStateDropdown(false); setShowCityDropdown(false); setCitySearch(""); };
     const openAdd = () => { resetForm(); setShowModal(true); };
     const openEdit = (c: PoliticalContact) => { setEditing(c); setName(c.name); setPhone(c.phone); setEmail(c.email || ""); setPoliticalRole(c.politicalRole); setParty(c.party || ""); setCity(c.city); setState(c.state); setNotes(c.notes || ""); setRelationship(c.relationship); setShowModal(true); };
 
@@ -103,7 +136,75 @@ export default function ManagePoliticalContactsScreen() {
                         <Text style={[st.label, { color: colors.text }]}>Cargo</Text><ScrollView horizontal showsHorizontalScrollIndicator={false}>{ROLES.map(r => (<TouchableOpacity key={r.v} onPress={() => setPoliticalRole(r.v)} style={[st.chip, { backgroundColor: politicalRole === r.v ? colors.primary : colors.backgroundSecondary }]}><Text style={{ color: politicalRole === r.v ? "#fff" : colors.text, fontSize: 12 }}>{r.l}</Text></TouchableOpacity>))}</ScrollView>
                         <Text style={[st.label, { color: colors.text }]}>Relação</Text><View style={st.chipRow}>{(["aliado", "neutro", "oposicao"] as const).map(r => (<TouchableOpacity key={r} onPress={() => setRelationship(r)} style={[st.chip, { backgroundColor: relationship === r ? relColor(r) + "20" : colors.backgroundSecondary, borderColor: relationship === r ? relColor(r) : colors.border }]}><Text style={{ color: relationship === r ? relColor(r) : colors.text, fontSize: 13, fontWeight: "600" }}>{relLabel(r)}</Text></TouchableOpacity>))}</View>
                         <View style={st.row}><View style={{ flex: 1 }}><Text style={[st.label, { color: colors.text }]}>Partido</Text><TextInput style={[st.input, { backgroundColor: colors.backgroundSecondary, color: colors.text, borderColor: colors.border }]} placeholder="PT, PL..." placeholderTextColor={colors.textSecondary} value={party} onChangeText={setParty} /></View><View style={{ flex: 1, marginLeft: 12 }}><Text style={[st.label, { color: colors.text }]}>Telefone</Text><TextInput style={[st.input, { backgroundColor: colors.backgroundSecondary, color: colors.text, borderColor: colors.border }]} placeholder="(00) 00000-0000" placeholderTextColor={colors.textSecondary} value={phone} onChangeText={setPhone} keyboardType="phone-pad" /></View></View>
-                        <View style={st.row}><View style={{ flex: 1 }}><Text style={[st.label, { color: colors.text }]}>Cidade</Text><TextInput style={[st.input, { backgroundColor: colors.backgroundSecondary, color: colors.text, borderColor: colors.border }]} placeholder="Cidade" placeholderTextColor={colors.textSecondary} value={city} onChangeText={setCity} /></View><View style={{ flex: 1, marginLeft: 12 }}><Text style={[st.label, { color: colors.text }]}>UF</Text><TextInput style={[st.input, { backgroundColor: colors.backgroundSecondary, color: colors.text, borderColor: colors.border }]} placeholder="MA" placeholderTextColor={colors.textSecondary} value={state} onChangeText={setState} maxLength={2} autoCapitalize="characters" /></View></View>
+                        <View style={st.row}>
+                            <View style={{ flex: 1 }}>
+                                <Text style={[st.label, { color: colors.text }]}>UF</Text>
+                                <TouchableOpacity
+                                    style={[st.input, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }]}
+                                    onPress={() => { setShowStateDropdown(!showStateDropdown); setShowCityDropdown(false); }}
+                                >
+                                    <Text style={{ color: state ? colors.text : colors.textSecondary, fontSize: 15 }}>
+                                        {state ? ESTADOS_BR.find(e => e.uf === state)?.nome || state : 'Selecione o estado'}
+                                    </Text>
+                                    <ChevronDown size={18} color={colors.textSecondary} />
+                                </TouchableOpacity>
+                                {showStateDropdown && (
+                                    <ScrollView style={{ maxHeight: 200, borderWidth: 1, borderColor: colors.border, borderRadius: 10, marginTop: 4 }} nestedScrollEnabled>
+                                        {ESTADOS_BR.map(e => (
+                                            <TouchableOpacity key={e.uf} onPress={() => { setState(e.uf); setCity(''); setCitySearch(''); setShowStateDropdown(false); }} style={{ paddingVertical: 10, paddingHorizontal: 14, backgroundColor: state === e.uf ? colors.primary + '15' : 'transparent' }}>
+                                                <Text style={{ color: state === e.uf ? colors.primary : colors.text, fontSize: 14, fontWeight: state === e.uf ? '600' : '400' }}>{e.uf} - {e.nome}</Text>
+                                            </TouchableOpacity>
+                                        ))}
+                                    </ScrollView>
+                                )}
+                            </View>
+                            <View style={{ flex: 1, marginLeft: 12 }}>
+                                <Text style={[st.label, { color: colors.text }]}>Cidade</Text>
+                                {!state ? (
+                                    <View style={[st.input, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border, justifyContent: 'center' }]}>
+                                        <Text style={{ color: colors.textSecondary, fontSize: 13 }}>Selecione o estado</Text>
+                                    </View>
+                                ) : loadingCities ? (
+                                    <View style={[st.input, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border, flexDirection: 'row', alignItems: 'center', gap: 8 }]}>
+                                        <ActivityIndicator size="small" color={colors.primary} />
+                                        <Text style={{ color: colors.textSecondary, fontSize: 13 }}>Carregando...</Text>
+                                    </View>
+                                ) : (
+                                    <>
+                                        <TouchableOpacity
+                                            style={[st.input, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }]}
+                                            onPress={() => { setShowCityDropdown(!showCityDropdown); setShowStateDropdown(false); }}
+                                        >
+                                            <Text style={{ color: city ? colors.text : colors.textSecondary, fontSize: 15, flex: 1 }} numberOfLines={1}>
+                                                {city || 'Selecione a cidade'}
+                                            </Text>
+                                            <ChevronDown size={18} color={colors.textSecondary} />
+                                        </TouchableOpacity>
+                                        {showCityDropdown && (
+                                            <View style={{ borderWidth: 1, borderColor: colors.border, borderRadius: 10, marginTop: 4 }}>
+                                                <TextInput
+                                                    style={[st.input, { borderWidth: 0, borderBottomWidth: 1, borderBottomColor: colors.border, borderRadius: 0 }]}
+                                                    placeholder="Buscar cidade..."
+                                                    placeholderTextColor={colors.textSecondary}
+                                                    value={citySearch}
+                                                    onChangeText={setCitySearch}
+                                                    autoFocus
+                                                />
+                                                <ScrollView style={{ maxHeight: 200 }} nestedScrollEnabled>
+                                                    {filteredCities.length === 0 ? (
+                                                        <View style={{ padding: 14 }}><Text style={{ color: colors.textSecondary, fontSize: 13 }}>Nenhuma cidade encontrada</Text></View>
+                                                    ) : filteredCities.map(c => (
+                                                        <TouchableOpacity key={c.id} onPress={() => { setCity(c.nome); setShowCityDropdown(false); setCitySearch(''); }} style={{ paddingVertical: 10, paddingHorizontal: 14, backgroundColor: city === c.nome ? colors.primary + '15' : 'transparent' }}>
+                                                            <Text style={{ color: city === c.nome ? colors.primary : colors.text, fontSize: 14, fontWeight: city === c.nome ? '600' : '400' }}>{c.nome}</Text>
+                                                        </TouchableOpacity>
+                                                    ))}
+                                                </ScrollView>
+                                            </View>
+                                        )}
+                                    </>
+                                )}
+                            </View>
+                        </View>
                         <Text style={[st.label, { color: colors.text }]}>Observações</Text><TextInput style={[st.input, { backgroundColor: colors.backgroundSecondary, color: colors.text, borderColor: colors.border, minHeight: 60, textAlignVertical: "top" }]} placeholder="Notas..." placeholderTextColor={colors.textSecondary} value={notes} onChangeText={setNotes} multiline />
                     </ScrollView>
                     <View style={st.mFooter}><TouchableOpacity onPress={() => { setShowModal(false); resetForm(); }} style={[st.cancelBtn, { borderColor: colors.border }]}><Text style={[st.cancelTxt, { color: colors.textSecondary }]}>Cancelar</Text></TouchableOpacity><TouchableOpacity onPress={handleSave} disabled={saving} style={[st.saveBtn, { backgroundColor: colors.primary, opacity: saving ? 0.6 : 1 }]}>{saving ? <ActivityIndicator color="#fff" size="small" /> : <Text style={st.saveTxt}>{editing ? "Atualizar" : "Cadastrar"}</Text>}</TouchableOpacity></View>
