@@ -111,7 +111,7 @@ export default function ProfileScreen() {
   const getRoleLabel = () => {
     switch (user?.role) {
       case "vereador":
-        return "Vereador";
+        return "Deputado";
       case "admin":
         return "Administrador";
       case "lideranca":

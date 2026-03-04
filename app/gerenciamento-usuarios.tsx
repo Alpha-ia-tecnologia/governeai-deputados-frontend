@@ -200,7 +200,7 @@ export default function GerenciamentoUsuariosScreen() {
       case "admin":
         return "Administrador";
       case "vereador":
-        return "Vereador";
+        return "Deputado";
       case "lideranca":
         return "Articulador Político";
       case "assessor":
@@ -250,7 +250,7 @@ export default function GerenciamentoUsuariosScreen() {
           </View>
         </View>
 
-        {/* Mostra o vereador vinculado para assessores e Articuladores Políticos */}
+        {/* Mostra o deputado vinculado para assessores e Articuladores Políticos */}
         {(user.role === "assessor" || user.role === "lideranca") && user.vereadorName && (
           <View style={styles.vereadorInfo}>
             <Text style={styles.vereadorLabel}>Vinculado a:</Text>
@@ -361,7 +361,7 @@ export default function GerenciamentoUsuariosScreen() {
           <View style={styles.filterSection}>
             <Text style={styles.filterLabel}>Perfil</Text>
             <View style={styles.filterOptions}>
-              {/* Admin vê todos os filtros, vereador/assessor só veem assessor e Articulador Político */}
+              {/* Admin vê todos os filtros, deputado/assessor só veem assessor e Articulador Político */}
               {(currentUser?.role === "admin"
                 ? ["all", "admin", "vereador", "assessor", "lideranca"]
                 : ["all", "assessor", "lideranca"]

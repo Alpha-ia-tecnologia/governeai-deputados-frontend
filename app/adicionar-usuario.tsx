@@ -18,6 +18,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { usersService, leadersService } from "@/services";
 import { User, UserRole } from "@/types";
 import Colors from "@/constants/colors";
+import { fetchCitiesByState, IBGEMunicipio } from "@/services/ibge.service";
 
 export default function AdicionarUsuarioScreen() {
   const { user: currentUser } = useAuth();
@@ -43,6 +44,10 @@ export default function AdicionarUsuarioScreen() {
   });
 
   const [showStateDropdown, setShowStateDropdown] = useState(false);
+  const [showCityDropdown, setShowCityDropdown] = useState(false);
+  const [ibgeCities, setIbgeCities] = useState<IBGEMunicipio[]>([]);
+  const [loadingCities, setLoadingCities] = useState(false);
+  const [citySearch, setCitySearch] = useState("");
 
   // Lista de estados brasileiros
   const ESTADOS_BR = [
@@ -170,6 +175,22 @@ export default function AdicionarUsuarioScreen() {
     };
   }, []);
 
+  // Buscar cidades do IBGE quando o estado mudar
+  useEffect(() => {
+    if (formData.state) {
+      setLoadingCities(true);
+      fetchCitiesByState(formData.state)
+        .then((cities) => setIbgeCities(cities))
+        .finally(() => setLoadingCities(false));
+    } else {
+      setIbgeCities([]);
+    }
+  }, [formData.state]);
+
+  const filteredCities = ibgeCities.filter((c) =>
+    c.nome.toLowerCase().includes(citySearch.toLowerCase())
+  );
+
   // Todos os roles disponíveis
   const allRoles: { value: UserRole; label: string; description: string }[] = [
     {
@@ -179,13 +200,13 @@ export default function AdicionarUsuarioScreen() {
     },
     {
       value: "vereador",
-      label: "Vereador",
+      label: "Deputado",
       description: "Gestão de projetos e emendas",
     },
     {
       value: "assessor",
       label: "Assessor",
-      description: "Mesmo nível de acesso do vereador",
+      description: "Mesmo nível de acesso do deputado",
     },
     {
       value: "lideranca",
@@ -277,16 +298,16 @@ export default function AdicionarUsuarioScreen() {
       currentUser?.role === "admin" &&
       !formData.vereadorId
     ) {
-      newErrors.vereadorId = "Selecione o vereador responsável";
+      newErrors.vereadorId = "Selecione o deputado responsável";
     }
 
     // Validar cidade para vereador (necessário para o mapa de calor)
     if (formData.role === "vereador" && !formData.city.trim()) {
-      newErrors.city = "Cidade de atuação é obrigatória para vereadores";
+      newErrors.city = "Cidade de atuação é obrigatória para deputados";
     }
 
     if (formData.role === "vereador" && !formData.state) {
-      newErrors.state = "Estado é obrigatório para vereadores";
+      newErrors.state = "Estado é obrigatório para deputados";
     }
 
     setErrors(newErrors);
@@ -633,14 +654,14 @@ export default function AdicionarUsuarioScreen() {
               )}
             </View>
 
-            {/* Seletor de Vereador para assessor e Articulador Político */}
+            {/* Seletor de Deputado para assessor e Articulador Político */}
             {needsVereadorSelection && (
               <View style={styles.inputGroup}>
-                <Text style={styles.label}>Vereador Responsável *</Text>
+                <Text style={styles.label}>Deputado Responsável *</Text>
                 {loadingVereadores ? (
                   <View style={styles.loadingVereadores}>
                     <ActivityIndicator size="small" color={Colors.light.primary} />
-                    <Text style={styles.loadingVereadoresText}>Carregando vereadores...</Text>
+                    <Text style={styles.loadingVereadoresText}>Carregando deputados...</Text>
                   </View>
                 ) : (
                   <>
@@ -658,8 +679,8 @@ export default function AdicionarUsuarioScreen() {
                           !formData.vereadorId && styles.dropdownPlaceholder
                         ]}>
                           {formData.vereadorId
-                            ? vereadores.find((v) => v.id === formData.vereadorId)?.name || "Vereador não encontrado"
-                            : "Selecione o vereador"}
+                            ? vereadores.find((v) => v.id === formData.vereadorId)?.name || "Deputado não encontrado"
+                            : "Selecione o deputado"}
                         </Text>
                       </View>
                       <ChevronDown size={20} color="#6b7280" />
@@ -670,7 +691,7 @@ export default function AdicionarUsuarioScreen() {
                         {vereadores.length === 0 ? (
                           <View style={styles.dropdownOption}>
                             <Text style={styles.dropdownOptionDescription}>
-                              Nenhum vereador cadastrado
+                              Nenhum deputado cadastrado
                             </Text>
                           </View>
                         ) : (
@@ -711,35 +732,17 @@ export default function AdicionarUsuarioScreen() {
               </View>
             )}
 
-            {/* Campos de cidade e estado para vereador */}
+            {/* Campos de estado e cidade para deputado */}
             {formData.role === "vereador" && (
               <>
-                <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Cidade de Atuação *</Text>
-                  <TextInput
-                    style={[styles.input, errors.city && styles.inputError]}
-                    placeholder="Digite a cidade onde atua"
-                    placeholderTextColor="#9ca3af"
-                    value={formData.city}
-                    onChangeText={(text) => {
-                      setFormData({ ...formData, city: text });
-                      if (errors.city) {
-                        setErrors({ ...errors, city: "" });
-                      }
-                    }}
-                    editable={!isLoading}
-                  />
-                  {errors.city && <Text style={styles.errorText}>{errors.city}</Text>}
-                  <Text style={styles.helperText}>
-                    A cidade será usada para centralizar o mapa de calor dos eleitores
-                  </Text>
-                </View>
-
                 <View style={styles.inputGroup}>
                   <Text style={styles.label}>Estado *</Text>
                   <TouchableOpacity
                     style={[styles.dropdown, errors.state && styles.dropdownError]}
-                    onPress={() => setShowStateDropdown(!showStateDropdown)}
+                    onPress={() => {
+                      setShowStateDropdown(!showStateDropdown);
+                      setShowCityDropdown(false);
+                    }}
                     disabled={isLoading}
                   >
                     <Text style={[
@@ -764,8 +767,9 @@ export default function AdicionarUsuarioScreen() {
                               formData.state === estado.uf && styles.dropdownOptionSelected,
                             ]}
                             onPress={() => {
-                              setFormData({ ...formData, state: estado.uf });
+                              setFormData({ ...formData, state: estado.uf, city: "" });
                               setShowStateDropdown(false);
+                              setCitySearch("");
                               if (errors.state) {
                                 setErrors({ ...errors, state: "" });
                               }
@@ -783,6 +787,90 @@ export default function AdicionarUsuarioScreen() {
                     </ScrollView>
                   )}
                   {errors.state && <Text style={styles.errorText}>{errors.state}</Text>}
+                </View>
+
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Cidade de Atuação *</Text>
+                  {!formData.state ? (
+                    <Text style={styles.helperText}>Selecione o estado primeiro</Text>
+                  ) : loadingCities ? (
+                    <View style={styles.loadingVereadores}>
+                      <ActivityIndicator size="small" color={Colors.light.primary} />
+                      <Text style={styles.loadingVereadoresText}>Carregando cidades...</Text>
+                    </View>
+                  ) : (
+                    <>
+                      <TouchableOpacity
+                        style={[styles.dropdown, errors.city && styles.dropdownError]}
+                        onPress={() => {
+                          setShowCityDropdown(!showCityDropdown);
+                          setShowStateDropdown(false);
+                        }}
+                        disabled={isLoading}
+                      >
+                        <Text style={[
+                          styles.dropdownText,
+                          !formData.city && styles.dropdownPlaceholder
+                        ]}>
+                          {formData.city || "Selecione a cidade"}
+                        </Text>
+                        <ChevronDown size={20} color="#6b7280" />
+                      </TouchableOpacity>
+
+                      {showCityDropdown && (
+                        <View>
+                          <TextInput
+                            style={[styles.input, { marginBottom: 0, borderBottomLeftRadius: 0, borderBottomRightRadius: 0 }]}
+                            placeholder="Buscar cidade..."
+                            placeholderTextColor="#9ca3af"
+                            value={citySearch}
+                            onChangeText={setCitySearch}
+                            autoFocus
+                          />
+                          <ScrollView style={styles.stateDropdownScroll}>
+                            <View style={styles.dropdownOptions}>
+                              {filteredCities.length === 0 ? (
+                                <View style={styles.dropdownOption}>
+                                  <Text style={styles.dropdownOptionDescription}>
+                                    Nenhuma cidade encontrada
+                                  </Text>
+                                </View>
+                              ) : (
+                                filteredCities.map((city) => (
+                                  <TouchableOpacity
+                                    key={city.id}
+                                    style={[
+                                      styles.dropdownOption,
+                                      formData.city === city.nome && styles.dropdownOptionSelected,
+                                    ]}
+                                    onPress={() => {
+                                      setFormData({ ...formData, city: city.nome });
+                                      setShowCityDropdown(false);
+                                      setCitySearch("");
+                                      if (errors.city) {
+                                        setErrors({ ...errors, city: "" });
+                                      }
+                                    }}
+                                  >
+                                    <Text style={[
+                                      styles.dropdownOptionText,
+                                      formData.city === city.nome && styles.dropdownOptionTextSelected,
+                                    ]}>
+                                      {city.nome}
+                                    </Text>
+                                  </TouchableOpacity>
+                                ))
+                              )}
+                            </View>
+                          </ScrollView>
+                        </View>
+                      )}
+                    </>
+                  )}
+                  {errors.city && <Text style={styles.errorText}>{errors.city}</Text>}
+                  <Text style={styles.helperText}>
+                    A cidade será usada para centralizar o mapa de calor dos eleitores
+                  </Text>
                 </View>
               </>
             )}

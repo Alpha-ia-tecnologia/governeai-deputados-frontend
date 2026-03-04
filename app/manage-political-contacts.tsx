@@ -12,7 +12,7 @@ import { Typography, Spacing, Radius } from "@/constants/colors";
 const ROLES: { v: PoliticalRole; l: string }[] = [
     { v: "deputado_estadual", l: "Dep. Estadual" },
     { v: "senador", l: "Senador" }, { v: "prefeito", l: "Prefeito" },
-    { v: "vereador", l: "Vereador" }, { v: "secretario", l: "Secretário" },
+    { v: "vereador", l: "Deputado" }, { v: "secretario", l: "Secretário" },
     { v: "lideranca_comunitaria", l: "Líder Comunitário" }, { v: "outro", l: "Outro" },
 ];
 

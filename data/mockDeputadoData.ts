@@ -395,7 +395,7 @@ export function getAdelmoSoaresCompleteInsights() {
             birthCity: 'Caxias',
             state: 'MA',
             politicalHistory: [
-                'Vereador de Caxias por 3 mandatos',
+                'Deputado de Caxias por 3 mandatos',
                 'Secretário de Estado da Agricultura Familiar (2015-2018)',
                 'Deputado Estadual eleito em 2018',
                 '2º Suplente em 2022, assumiu em junho de 2024',

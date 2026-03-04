@@ -42,7 +42,7 @@ export const CategoryLabels: Record<string, string> = {
 
 export const RoleLabels: Record<string, string> = {
   admin: "Administrador",
-  vereador: "Vereador",
+  vereador: "Deputado",
   lideranca: "Articulador Político",
   assessor: "Assessor",
 };
