@@ -764,7 +764,7 @@ export default function ElectionAnalysisScreen() {
                                     <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: i < 3 ? '#FF6B00' : '#E5E7EB', justifyContent: 'center', alignItems: 'center', marginRight: 10 }}>
                                         <Text style={{ fontSize: 11, fontWeight: '700', color: i < 3 ? '#FFF' : '#6B7280' }}>{i + 1}</Text>
                                     </View>
-                                    <Text style={{ flex: 1, fontSize: 13, fontWeight: '600', color: '#1F2937' }}>{c.city}</Text>
+                                    <Text style={{ flex: 1, fontSize: 13, fontWeight: '600', color: '#1F2937' }}>{c.name}</Text>
                                     <Text style={{ fontSize: 14, fontWeight: '700', color: '#FF6B00' }}>{formatNumber(c.votes)}</Text>
                                 </View>
                             ))}
