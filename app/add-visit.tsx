@@ -117,6 +117,15 @@ export default function AddVisitScreen() {
         }}
       />
       <ScrollView style={styles.container}>
+        {/* Botão Voltar */}
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => router.back()}
+        >
+          <ArrowLeft color={Colors.light.primary} size={20} />
+          <Text style={styles.backButtonText}>Voltar</Text>
+        </TouchableOpacity>
+
         <View style={styles.form}>
           <View style={styles.infoCard}>
             <Text style={styles.infoLabel}>Eleitor:</Text>
@@ -203,6 +212,19 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.light.backgroundSecondary,
+  },
+  backButton: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    gap: 6,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 8,
+  },
+  backButtonText: {
+    fontSize: 16,
+    color: Colors.light.primary,
+    fontWeight: "600" as const,
   },
   form: {
     padding: 16,

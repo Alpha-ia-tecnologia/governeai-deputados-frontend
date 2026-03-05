@@ -28,6 +28,7 @@ import {
   Edit,
   Trash2,
   Edit2,
+  ArrowLeft,
 } from "lucide-react-native";
 import { CategoryLabels, StatusLabels } from "@/constants/labels";
 import { HelpRecord, Visit } from "@/types";
@@ -388,6 +389,15 @@ export default function VoterDetailsScreen() {
         }}
       />
       <ScrollView style={styles.container}>
+        {/* Botão Voltar */}
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => router.back()}
+        >
+          <ArrowLeft color={Colors.light.primary} size={20} />
+          <Text style={styles.backButtonText}>Voltar</Text>
+        </TouchableOpacity>
+
         <View style={styles.header}>
           <View style={styles.avatarContainer}>
             <User color={Colors.light.primary} size={48} />
@@ -527,6 +537,19 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.light.backgroundSecondary,
+  },
+  backButton: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    gap: 6,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 8,
+  },
+  backButtonText: {
+    fontSize: 16,
+    color: Colors.light.primary,
+    fontWeight: "600" as const,
   },
   errorText: {
     textAlign: "center" as const,
