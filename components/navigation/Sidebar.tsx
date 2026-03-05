@@ -23,6 +23,7 @@ import {
     Handshake,
     MapPin,
     MessageCircle,
+    Phone,
 } from 'lucide-react-native';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -53,6 +54,7 @@ const navItems: NavItem[] = [
     { id: 'cities', label: 'Cidades', icon: MapPin, route: '/manage-cities' },
     { id: 'analytics', label: 'Análise Eleitoral', icon: BarChart3, route: '/election-analysis' },
     { id: 'chat', label: 'Chat', icon: MessageCircle, route: '/chat' },
+    { id: 'whatsapp', label: 'WhatsApp', icon: Phone, route: '/whatsapp-chat' },
 ];
 
 const systemNavItems: NavItem[] = [

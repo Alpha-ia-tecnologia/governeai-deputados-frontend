@@ -66,6 +66,12 @@ function RootLayoutNav() {
     if (pathname.includes("/manage-cities")) return "/manage-cities";
     if (pathname.includes("/election-analysis")) return "/election-analysis";
     if (pathname.includes("/chat")) return "/chat";
+    if (pathname.includes("/whatsapp-chat")) return "/whatsapp-chat";
+    if (pathname.includes("/whatsapp-templates")) return "/whatsapp-templates";
+    if (pathname.includes("/whatsapp-crm")) return "/whatsapp-crm";
+    if (pathname.includes("/whatsapp-bot")) return "/whatsapp-bot";
+    if (pathname.includes("/whatsapp-reports")) return "/whatsapp-reports";
+    if (pathname.includes("/whatsapp-settings")) return "/whatsapp-settings";
     if (pathname.includes("/settings")) return "/settings";
     return "/";
   };
@@ -91,6 +97,12 @@ function RootLayoutNav() {
       "/manage-ceap": "/manage-ceap",
       "/manage-cities": "/manage-cities",
       "/chat": "/chat",
+      "/whatsapp-chat": "/whatsapp-chat",
+      "/whatsapp-templates": "/whatsapp-templates",
+      "/whatsapp-crm": "/whatsapp-crm",
+      "/whatsapp-bot": "/whatsapp-bot",
+      "/whatsapp-reports": "/whatsapp-reports",
+      "/whatsapp-settings": "/whatsapp-settings",
     };
     const targetRoute = routeMap[route] || route;
     expoRouter.push(targetRoute as any);
@@ -148,6 +160,12 @@ function RootLayoutNav() {
           <Stack.Screen name="system-preferences" options={{ headerShown: false }} />
           <Stack.Screen name="admin-panel" options={{ headerShown: false }} />
           <Stack.Screen name="chat" options={{ headerShown: false }} />
+          <Stack.Screen name="whatsapp-chat" options={{ headerShown: false }} />
+          <Stack.Screen name="whatsapp-templates" options={{ headerShown: false }} />
+          <Stack.Screen name="whatsapp-crm" options={{ headerShown: false }} />
+          <Stack.Screen name="whatsapp-bot" options={{ headerShown: false }} />
+          <Stack.Screen name="whatsapp-reports" options={{ headerShown: false }} />
+          <Stack.Screen name="whatsapp-settings" options={{ headerShown: false }} />
           <Stack.Screen name="add-voter" options={{ headerShown: false }} />
           <Stack.Screen name="edit-voter" options={{ headerShown: false }} />
           <Stack.Screen name="add-visit" options={{ headerShown: false }} />
