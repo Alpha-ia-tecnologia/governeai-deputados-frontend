@@ -128,8 +128,9 @@ export default function WhatsappChatScreen() {
                 data = await whatsappChatService.getEvolutionMessages(conversationId);
             } else {
                 data = await whatsappChatService.getMessages(conversationId);
-                data = data.reverse();
             }
+            // Sort chronologically (oldest first) for chat display
+            data.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
             setMessages(data);
             setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 200);
         } catch (error) {
