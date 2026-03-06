@@ -106,6 +106,7 @@ export default function WhatsappChatScreen() {
     const [activeTab, setActiveTab] = useState<'all' | 'pending' | 'mine'>('all');
 
     const flatListRef = useRef<FlatList>(null);
+    const lastSentAt = useRef<number>(0);
 
     // ─── Load conversations ───
     const loadConversations = useCallback(async () => {
@@ -193,9 +194,11 @@ export default function WhatsappChatScreen() {
     useEffect(() => {
         if (selectedConversation?.id) {
             loadMessages(selectedConversation.id);
-            // Polling for new messages every 10 seconds
+            // Polling for new messages every 10 seconds (skip if just sent)
             const interval = setInterval(() => {
-                loadMessages(selectedConversation.id);
+                if (Date.now() - lastSentAt.current > 5000) {
+                    loadMessages(selectedConversation.id);
+                }
             }, 10000);
             return () => clearInterval(interval);
         }
@@ -215,8 +218,11 @@ export default function WhatsappChatScreen() {
             } else {
                 newMsg = await whatsappChatService.sendMessage(selectedConversation.id, text);
             }
+            lastSentAt.current = Date.now();
             setMessages(prev => [...prev, newMsg]);
             setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
+            // Reload from API after delay to sync
+            setTimeout(() => loadMessages(selectedConversation.id), 3000);
         } catch (error: any) {
             setMessageText(text);
             console.error('Erro ao enviar:', error.message);
