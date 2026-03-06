@@ -110,7 +110,7 @@ export default function WhatsappChatScreen() {
     // ─── Load conversations ───
     const loadConversations = useCallback(async () => {
         try {
-            setLoading(true);
+            if (conversations.length === 0) setLoading(true);
             const data = await whatsappChatService.getConversations();
             setConversations(data);
         } catch (error) {
@@ -118,7 +118,7 @@ export default function WhatsappChatScreen() {
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [conversations.length]);
 
     // ─── Load messages for selected conversation ───
     const loadMessages = useCallback(async (conversationId: string) => {
@@ -181,9 +181,23 @@ export default function WhatsappChatScreen() {
         loadConversations();
     }, []);
 
+    // ─── Auto-refresh conversations (polling for Evolution API) ───
+    useEffect(() => {
+        const interval = setInterval(() => {
+            loadConversations();
+        }, 15000); // Refresh every 15 seconds
+        return () => clearInterval(interval);
+    }, [loadConversations]);
+
+    // ─── Auto-refresh messages for selected conversation ───
     useEffect(() => {
         if (selectedConversation?.id) {
             loadMessages(selectedConversation.id);
+            // Polling for new messages every 10 seconds
+            const interval = setInterval(() => {
+                loadMessages(selectedConversation.id);
+            }, 10000);
+            return () => clearInterval(interval);
         }
     }, [selectedConversation?.id]);
 
