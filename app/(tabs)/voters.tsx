@@ -39,7 +39,7 @@ import { DEFAULT_ATENDIMENTO_TYPES } from "@/constants/atendimento-types";
 type TabType = "eleitores" | "atendimentos";
 
 export default function VotersScreen() {
-  const { leaders, helpRecords } = useData();
+  const { leaders, helpRecords, voters } = useData();
   const { showToast } = useToast();
   const [activeTab, setActiveTab] = useState<TabType>("eleitores");
 
@@ -54,6 +54,8 @@ export default function VotersScreen() {
   const [selectedCategory, setSelectedCategory] = useState<HelpCategory | "all">("all");
   const [selectedStatus, setSelectedStatus] = useState<HelpStatus | "all">("all");
   const [selectedType, setSelectedType] = useState<string>("all");
+  const [selectedNeighborhood, setSelectedNeighborhood] = useState<string>("all");
+  const [selectedAtendLeader, setSelectedAtendLeader] = useState<string>("all");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [showFilters, setShowFilters] = useState(false);
@@ -109,6 +111,29 @@ export default function VotersScreen() {
     return uniqueTypes;
   }, [helpRecords]);
 
+  // Voter lookup for neighborhoods
+  const voterMap = useMemo(() => {
+    const map: Record<string, { neighborhood?: string }> = {};
+    voters.forEach((v) => { map[v.id] = { neighborhood: v.neighborhood }; });
+    return map;
+  }, [voters]);
+
+  // Unique neighborhoods from voters linked to help records
+  const allNeighborhoods = useMemo(() => {
+    const neighborhoods = helpRecords
+      .map((r) => voterMap[r.voterId]?.neighborhood)
+      .filter((n): n is string => !!n && n.trim() !== "");
+    return [...new Set(neighborhoods)].sort();
+  }, [helpRecords, voterMap]);
+
+  // Unique leaders from help records
+  const allAtendLeaders = useMemo(() => {
+    const leaderNames = helpRecords
+      .map((r) => r.leaderName)
+      .filter((n): n is string => !!n && n.trim() !== "");
+    return [...new Set(leaderNames)].sort();
+  }, [helpRecords]);
+
   // Filter records
   const filteredRecords = useMemo(() => {
     let records = [...helpRecords];
@@ -136,6 +161,17 @@ export default function VotersScreen() {
       records = records.filter((r) => r.description === selectedType);
     }
 
+    if (selectedNeighborhood !== "all") {
+      records = records.filter((r) => {
+        const voterNeighborhood = voterMap[r.voterId]?.neighborhood;
+        return voterNeighborhood === selectedNeighborhood;
+      });
+    }
+
+    if (selectedAtendLeader !== "all") {
+      records = records.filter((r) => r.leaderName === selectedAtendLeader);
+    }
+
     const fromDate = parseDate(dateFrom);
     if (fromDate) {
       records = records.filter((r) => {
@@ -160,7 +196,7 @@ export default function VotersScreen() {
     });
 
     return records;
-  }, [helpRecords, atendSearch, selectedCategory, selectedStatus, selectedType, dateFrom, dateTo]);
+  }, [helpRecords, atendSearch, selectedCategory, selectedStatus, selectedType, selectedNeighborhood, selectedAtendLeader, dateFrom, dateTo, voterMap]);
 
   // Stats
   const stats = useMemo(() => {
@@ -193,13 +229,14 @@ export default function VotersScreen() {
   const handleExport = () => {
     try {
       const headers = [
-        "Data Atendimento", "Eleitor", "Tipo", "Categoria", "Status",
+        "Data Atendimento", "Eleitor", "Bairro", "Tipo", "Categoria", "Status",
         "Responsável", "Articulador Político", "Observações", "Data Registro",
       ];
 
       const rows = filteredRecords.map((r) => [
         formatDate(r.serviceDate || r.createdAt),
         r.voterName,
+        voterMap[r.voterId]?.neighborhood || "",
         r.description || "",
         CategoryLabels[r.category] || r.category,
         StatusLabels[r.status] || r.status,
@@ -236,12 +273,14 @@ export default function VotersScreen() {
     setSelectedCategory("all");
     setSelectedStatus("all");
     setSelectedType("all");
+    setSelectedNeighborhood("all");
+    setSelectedAtendLeader("all");
     setDateFrom("");
     setDateTo("");
     setAtendSearch("");
   };
 
-  const hasActiveFilters = selectedCategory !== "all" || selectedStatus !== "all" || selectedType !== "all" || dateFrom || dateTo;
+  const hasActiveFilters = selectedCategory !== "all" || selectedStatus !== "all" || selectedType !== "all" || selectedNeighborhood !== "all" || selectedAtendLeader !== "all" || dateFrom || dateTo;
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -529,6 +568,62 @@ export default function VotersScreen() {
                       numberOfLines={1}
                     >
                       {type}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </ScrollView>
+          </View>
+
+          <View style={styles.filterSection}>
+            <Text style={styles.filterSectionLabel}>Bairro</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              <View style={styles.chipRow}>
+                <TouchableOpacity
+                  style={[styles.chip, selectedNeighborhood === "all" && styles.chipSelected]}
+                  onPress={() => setSelectedNeighborhood("all")}
+                >
+                  <Text style={[styles.chipText, selectedNeighborhood === "all" && styles.chipTextSelected]}>Todos</Text>
+                </TouchableOpacity>
+                {allNeighborhoods.map((neigh) => (
+                  <TouchableOpacity
+                    key={neigh}
+                    style={[styles.chip, selectedNeighborhood === neigh && styles.chipSelected]}
+                    onPress={() => setSelectedNeighborhood(neigh)}
+                  >
+                    <Text
+                      style={[styles.chipText, selectedNeighborhood === neigh && styles.chipTextSelected]}
+                      numberOfLines={1}
+                    >
+                      {neigh}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </ScrollView>
+          </View>
+
+          <View style={styles.filterSection}>
+            <Text style={styles.filterSectionLabel}>Articulador Político</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              <View style={styles.chipRow}>
+                <TouchableOpacity
+                  style={[styles.chip, selectedAtendLeader === "all" && styles.chipSelected]}
+                  onPress={() => setSelectedAtendLeader("all")}
+                >
+                  <Text style={[styles.chipText, selectedAtendLeader === "all" && styles.chipTextSelected]}>Todos</Text>
+                </TouchableOpacity>
+                {allAtendLeaders.map((leader) => (
+                  <TouchableOpacity
+                    key={leader}
+                    style={[styles.chip, selectedAtendLeader === leader && styles.chipSelected]}
+                    onPress={() => setSelectedAtendLeader(leader)}
+                  >
+                    <Text
+                      style={[styles.chipText, selectedAtendLeader === leader && styles.chipTextSelected]}
+                      numberOfLines={1}
+                    >
+                      {leader}
                     </Text>
                   </TouchableOpacity>
                 ))}
