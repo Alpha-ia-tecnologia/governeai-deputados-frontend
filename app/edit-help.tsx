@@ -17,7 +17,7 @@ import Colors from "@/constants/colors";
 import { HelpCategory, HelpStatus } from "@/types";
 import { CategoryLabels, StatusLabels } from "@/constants/labels";
 import { DEFAULT_ATENDIMENTO_TYPES } from "@/constants/atendimento-types";
-import { ArrowLeft, Save, Search, Plus, X, ChevronDown } from "lucide-react-native";
+import { ArrowLeft, Save, Search, Plus, X, ChevronDown, Calendar } from "lucide-react-native";
 
 export default function EditHelpScreen() {
   const { helpId } = useLocalSearchParams();
@@ -34,6 +34,32 @@ export default function EditHelpScreen() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [voterName, setVoterName] = useState("");
   const [isLayoutMounted, setIsLayoutMounted] = useState(false);
+  const [serviceDate, setServiceDate] = useState("");
+
+  // Formatar data DD/MM/AAAA
+  const formatDateInput = (text: string) => {
+    const cleaned = text.replace(/\D/g, "");
+    let formatted = cleaned;
+    if (cleaned.length > 2) formatted = cleaned.slice(0, 2) + "/" + cleaned.slice(2);
+    if (cleaned.length > 4) formatted = cleaned.slice(0, 2) + "/" + cleaned.slice(2, 4) + "/" + cleaned.slice(4, 8);
+    setServiceDate(formatted);
+  };
+
+  // Converter DD/MM/AAAA para YYYY-MM-DD
+  const parseDateToISO = (dateStr: string): string | undefined => {
+    if (!dateStr || dateStr.length !== 10) return undefined;
+    const [day, month, year] = dateStr.split("/");
+    if (!day || !month || !year) return undefined;
+    return `${year}-${month}-${day}`;
+  };
+
+  // Converter YYYY-MM-DD para DD/MM/AAAA
+  const formatISOToDisplay = (isoDate: string | undefined): string => {
+    if (!isoDate) return "";
+    const parts = isoDate.split("T")[0].split("-");
+    if (parts.length !== 3) return "";
+    return `${parts[2]}/${parts[1]}/${parts[0]}`;
+  };
 
   // Estado do dropdown pesquisável de atendimento
   const [searchQuery, setSearchQuery] = useState("");
@@ -119,6 +145,7 @@ export default function EditHelpScreen() {
         setNotes(helpRecord.notes || "");
         setSelectedLeaderId(helpRecord.leaderId);
         setVoterName(helpRecord.voterName);
+        setServiceDate(formatISOToDisplay(helpRecord.serviceDate));
 
         // Se a descrição salva não está nos tipos padrão, adicionar como tipo custom
         if (
@@ -159,6 +186,7 @@ export default function EditHelpScreen() {
         leaderName: selectedLeader?.name || "",
         category,
         description: description.trim(),
+        serviceDate: parseDateToISO(serviceDate),
         status,
         notes: notes.trim() || undefined,
         vereadorId: selectedLeader?.vereadorId, // Atualiza o vereadorId baseado na Articulador Político
@@ -233,6 +261,25 @@ export default function EditHelpScreen() {
                   </Text>
                 </TouchableOpacity>
               ))}
+            </View>
+          </View>
+
+          {/* Data do Atendimento */}
+          <View style={styles.field}>
+            <Text style={styles.label}>
+              Data do Atendimento
+            </Text>
+            <View style={styles.dateInputContainer}>
+              <Calendar color={Colors.light.textSecondary} size={18} />
+              <TextInput
+                style={styles.dateInput}
+                value={serviceDate}
+                onChangeText={formatDateInput}
+                placeholder="DD/MM/AAAA"
+                placeholderTextColor={Colors.light.textSecondary}
+                keyboardType="numeric"
+                maxLength={10}
+              />
             </View>
           </View>
 
@@ -586,6 +633,24 @@ const styles = StyleSheet.create({
     flexDirection: "row" as const,
     flexWrap: "wrap" as const,
     gap: 8,
+  },
+  // Data do atendimento
+  dateInputContainer: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    backgroundColor: Colors.light.card,
+    borderWidth: 1,
+    borderColor: Colors.light.border,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    gap: 10,
+  },
+  dateInput: {
+    flex: 1,
+    fontSize: 16,
+    color: Colors.light.text,
+    paddingVertical: 0,
   },
   chip: {
     paddingHorizontal: 16,

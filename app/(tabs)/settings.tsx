@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import {
   View,
   Text,
@@ -19,6 +19,7 @@ import {
   Moon,
   Smartphone,
   Check,
+  HeartHandshake,
 } from "lucide-react-native";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme, ThemeMode } from "@/contexts/ThemeContext";
@@ -62,6 +63,12 @@ export default function SettingsScreen() {
             },
           ]
           : []),
+        {
+          icon: HeartHandshake,
+          title: "Gestão de Atendimentos",
+          description: "Acompanhar e exportar",
+          onPress: () => router.push("/gerenciamento-atendimentos"),
+        },
         {
           icon: User,
           title: "Meu Perfil",

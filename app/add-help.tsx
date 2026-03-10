@@ -17,7 +17,7 @@ import Colors from "@/constants/colors";
 import { HelpCategory, HelpStatus } from "@/types";
 import { CategoryLabels, StatusLabels } from "@/constants/labels";
 import { DEFAULT_ATENDIMENTO_TYPES } from "@/constants/atendimento-types";
-import { ArrowLeft, Save, Search, Plus, X, ChevronDown } from "lucide-react-native";
+import { ArrowLeft, Save, Search, Plus, X, ChevronDown, Calendar } from "lucide-react-native";
 
 export default function AddHelpScreen() {
   const { voterId, voterName } = useLocalSearchParams();
@@ -28,8 +28,26 @@ export default function AddHelpScreen() {
   const [description, setDescription] = useState("");
   const [status, setStatus] = useState<HelpStatus>("pending");
   const [notes, setNotes] = useState("");
+  const [serviceDate, setServiceDate] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Formatar data DD/MM/AAAA
+  const formatDateInput = (text: string) => {
+    const cleaned = text.replace(/\D/g, "");
+    let formatted = cleaned;
+    if (cleaned.length > 2) formatted = cleaned.slice(0, 2) + "/" + cleaned.slice(2);
+    if (cleaned.length > 4) formatted = cleaned.slice(0, 2) + "/" + cleaned.slice(2, 4) + "/" + cleaned.slice(4, 8);
+    setServiceDate(formatted);
+  };
+
+  // Converter DD/MM/AAAA para YYYY-MM-DD
+  const parseDateToISO = (dateStr: string): string | undefined => {
+    if (!dateStr || dateStr.length !== 10) return undefined;
+    const [day, month, year] = dateStr.split("/");
+    if (!day || !month || !year) return undefined;
+    return `${year}-${month}-${day}`;
+  };
 
   // Estado do dropdown pesquisável de atendimento
   const [searchQuery, setSearchQuery] = useState("");
@@ -152,6 +170,7 @@ export default function AddHelpScreen() {
         leaderName: voter.leaderName || "",
         category,
         description: description.trim(),
+        serviceDate: parseDateToISO(serviceDate),
         status,
         responsibleId: user?.id || "",
         responsibleName: user?.name || "",
@@ -213,6 +232,25 @@ export default function AddHelpScreen() {
                 return voter?.leaderName || "Não definida";
               })()}
             </Text>
+          </View>
+
+          {/* Data do Atendimento */}
+          <View style={styles.field}>
+            <Text style={styles.label}>
+              Data do Atendimento
+            </Text>
+            <View style={styles.dateInputContainer}>
+              <Calendar color={Colors.light.textSecondary} size={18} />
+              <TextInput
+                style={styles.dateInput}
+                value={serviceDate}
+                onChangeText={formatDateInput}
+                placeholder="DD/MM/AAAA"
+                placeholderTextColor={Colors.light.textSecondary}
+                keyboardType="numeric"
+                maxLength={10}
+              />
+            </View>
           </View>
 
           {/* Tipo de Atendimento - Dropdown Pesquisável */}
@@ -569,6 +607,24 @@ const styles = StyleSheet.create({
     flexDirection: "row" as const,
     flexWrap: "wrap" as const,
     gap: 8,
+  },
+  // Data do atendimento
+  dateInputContainer: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    backgroundColor: Colors.light.card,
+    borderWidth: 1,
+    borderColor: Colors.light.border,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    gap: 10,
+  },
+  dateInput: {
+    flex: 1,
+    fontSize: 16,
+    color: Colors.light.text,
+    paddingVertical: 0,
   },
   chip: {
     paddingHorizontal: 16,

@@ -127,6 +127,7 @@ export interface HelpRecord {
   leaderName: string;
   category: HelpCategory;
   description: string;
+  serviceDate?: string;
   status: HelpStatus;
   responsibleId: string;
   responsibleName: string;
