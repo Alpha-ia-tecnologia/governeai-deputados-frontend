@@ -413,73 +413,8 @@ export default function VotersScreen() {
   // ─── Render: Atendimentos Tab ───
   const renderAtendimentosTab = () => (
     <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
-      {/* Stats Cards */}
-      <View style={styles.statsContainer}>
-        <View style={[styles.statCard, { borderLeftColor: Colors.light.primary }]}>
-          <HeartHandshake color={Colors.light.primary} size={22} />
-          <Text style={styles.statNumber}>{stats.total}</Text>
-          <Text style={styles.statLabel}>Total</Text>
-        </View>
-        <View style={[styles.statCard, { borderLeftColor: Colors.light.error }]}>
-          <Clock color={Colors.light.error} size={22} />
-          <Text style={styles.statNumber}>{stats.pending}</Text>
-          <Text style={styles.statLabel}>Pendentes</Text>
-        </View>
-        <View style={[styles.statCard, { borderLeftColor: Colors.light.warning }]}>
-          <Activity color={Colors.light.warning} size={22} />
-          <Text style={styles.statNumber}>{stats.inProgress}</Text>
-          <Text style={styles.statLabel}>Andamento</Text>
-        </View>
-        <View style={[styles.statCard, { borderLeftColor: Colors.light.success }]}>
-          <CheckCircle2 color={Colors.light.success} size={22} />
-          <Text style={styles.statNumber}>{stats.completed}</Text>
-          <Text style={styles.statLabel}>Concluídos</Text>
-        </View>
-      </View>
-
-      {/* Top Types Analysis */}
-      {stats.topTypes.length > 0 && (
-        <View style={styles.analysisCard}>
-          <Text style={styles.analysisTitle}>Top 5 Tipos de Atendimento</Text>
-          {stats.topTypes.map(([type, count], idx) => (
-            <View key={type} style={styles.analysisRow}>
-              <View style={styles.analysisRank}>
-                <Text style={styles.analysisRankText}>{idx + 1}º</Text>
-              </View>
-              <Text style={styles.analysisType} numberOfLines={1}>{type}</Text>
-              <View style={styles.analysisBarContainer}>
-                <View
-                  style={[
-                    styles.analysisBar,
-                    { width: `${(count / stats.topTypes[0][1]) * 100}%` },
-                  ]}
-                />
-              </View>
-              <Text style={styles.analysisCount}>{count}</Text>
-            </View>
-          ))}
-        </View>
-      )}
-
-      {/* Category Breakdown */}
-      {Object.keys(stats.byCategory).length > 0 && (
-        <View style={styles.analysisCard}>
-          <Text style={styles.analysisTitle}>Por Categoria</Text>
-          {Object.entries(stats.byCategory)
-            .sort(([, a], [, b]) => b - a)
-            .map(([cat, count]) => (
-              <View key={cat} style={styles.analysisCatRow}>
-                <Text style={styles.analysisCatName}>{cat}</Text>
-                <View style={styles.analysisCatBadge}>
-                  <Text style={styles.analysisCatCount}>{count}</Text>
-                </View>
-              </View>
-            ))}
-        </View>
-      )}
-
-      {/* Search + Actions */}
-      <View style={styles.atendSearchRow}>
+      {/* Search + Actions - FIRST */}
+      <View style={[styles.atendSearchRow, { marginTop: 8 }]}>
         <View style={styles.atendSearchContainer}>
           <Search color={Colors.light.textSecondary} size={18} />
           <TextInput
@@ -506,47 +441,9 @@ export default function VotersScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Filters */}
+      {/* Filters - SECOND */}
       {showFilters && (
         <View style={styles.filtersContainer}>
-          <View style={styles.filterSection}>
-            <Text style={styles.filterSectionLabel}>Categoria</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              <View style={styles.chipRow}>
-                {categories.map((cat) => (
-                  <TouchableOpacity
-                    key={cat}
-                    style={[styles.chip, selectedCategory === cat && styles.chipSelected]}
-                    onPress={() => setSelectedCategory(cat)}
-                  >
-                    <Text style={[styles.chipText, selectedCategory === cat && styles.chipTextSelected]}>
-                      {categoryAllLabel[cat]}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </ScrollView>
-          </View>
-
-          <View style={styles.filterSection}>
-            <Text style={styles.filterSectionLabel}>Status</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              <View style={styles.chipRow}>
-                {statuses.map((stat) => (
-                  <TouchableOpacity
-                    key={stat}
-                    style={[styles.chip, selectedStatus === stat && styles.chipSelected]}
-                    onPress={() => setSelectedStatus(stat)}
-                  >
-                    <Text style={[styles.chipText, selectedStatus === stat && styles.chipTextSelected]}>
-                      {statusAllLabel[stat]}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </ScrollView>
-          </View>
-
           <View style={styles.filterSection}>
             <Text style={styles.filterSectionLabel}>Tipo de Atendimento</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
@@ -632,6 +529,44 @@ export default function VotersScreen() {
           </View>
 
           <View style={styles.filterSection}>
+            <Text style={styles.filterSectionLabel}>Categoria</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              <View style={styles.chipRow}>
+                {categories.map((cat) => (
+                  <TouchableOpacity
+                    key={cat}
+                    style={[styles.chip, selectedCategory === cat && styles.chipSelected]}
+                    onPress={() => setSelectedCategory(cat)}
+                  >
+                    <Text style={[styles.chipText, selectedCategory === cat && styles.chipTextSelected]}>
+                      {categoryAllLabel[cat]}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </ScrollView>
+          </View>
+
+          <View style={styles.filterSection}>
+            <Text style={styles.filterSectionLabel}>Status</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              <View style={styles.chipRow}>
+                {statuses.map((stat) => (
+                  <TouchableOpacity
+                    key={stat}
+                    style={[styles.chip, selectedStatus === stat && styles.chipSelected]}
+                    onPress={() => setSelectedStatus(stat)}
+                  >
+                    <Text style={[styles.chipText, selectedStatus === stat && styles.chipTextSelected]}>
+                      {statusAllLabel[stat]}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </ScrollView>
+          </View>
+
+          <View style={styles.filterSection}>
             <Text style={styles.filterSectionLabel}>Período</Text>
             <View style={styles.dateRow}>
               <View style={styles.dateField}>
@@ -676,6 +611,71 @@ export default function VotersScreen() {
           {filteredRecords.length} atendimento{filteredRecords.length !== 1 ? "s" : ""} encontrado{filteredRecords.length !== 1 ? "s" : ""}
         </Text>
       </View>
+
+      {/* Stats Cards */}
+      <View style={styles.statsContainer}>
+        <View style={[styles.statCard, { borderLeftColor: Colors.light.primary }]}>
+          <HeartHandshake color={Colors.light.primary} size={22} />
+          <Text style={styles.statNumber}>{stats.total}</Text>
+          <Text style={styles.statLabel}>Total</Text>
+        </View>
+        <View style={[styles.statCard, { borderLeftColor: Colors.light.error }]}>
+          <Clock color={Colors.light.error} size={22} />
+          <Text style={styles.statNumber}>{stats.pending}</Text>
+          <Text style={styles.statLabel}>Pendentes</Text>
+        </View>
+        <View style={[styles.statCard, { borderLeftColor: Colors.light.warning }]}>
+          <Activity color={Colors.light.warning} size={22} />
+          <Text style={styles.statNumber}>{stats.inProgress}</Text>
+          <Text style={styles.statLabel}>Andamento</Text>
+        </View>
+        <View style={[styles.statCard, { borderLeftColor: Colors.light.success }]}>
+          <CheckCircle2 color={Colors.light.success} size={22} />
+          <Text style={styles.statNumber}>{stats.completed}</Text>
+          <Text style={styles.statLabel}>Concluídos</Text>
+        </View>
+      </View>
+
+      {/* Top Types Analysis */}
+      {stats.topTypes.length > 0 && (
+        <View style={styles.analysisCard}>
+          <Text style={styles.analysisTitle}>Top 5 Tipos de Atendimento</Text>
+          {stats.topTypes.map(([type, count], idx) => (
+            <View key={type} style={styles.analysisRow}>
+              <View style={styles.analysisRank}>
+                <Text style={styles.analysisRankText}>{idx + 1}º</Text>
+              </View>
+              <Text style={styles.analysisType} numberOfLines={1}>{type}</Text>
+              <View style={styles.analysisBarContainer}>
+                <View
+                  style={[
+                    styles.analysisBar,
+                    { width: `${(count / stats.topTypes[0][1]) * 100}%` },
+                  ]}
+                />
+              </View>
+              <Text style={styles.analysisCount}>{count}</Text>
+            </View>
+          ))}
+        </View>
+      )}
+
+      {/* Category Breakdown */}
+      {Object.keys(stats.byCategory).length > 0 && (
+        <View style={styles.analysisCard}>
+          <Text style={styles.analysisTitle}>Por Categoria</Text>
+          {Object.entries(stats.byCategory)
+            .sort(([, a], [, b]) => b - a)
+            .map(([cat, count]) => (
+              <View key={cat} style={styles.analysisCatRow}>
+                <Text style={styles.analysisCatName}>{cat}</Text>
+                <View style={styles.analysisCatBadge}>
+                  <Text style={styles.analysisCatCount}>{count}</Text>
+                </View>
+              </View>
+            ))}
+        </View>
+      )}
 
       {/* Records List */}
       {filteredRecords.length === 0 ? (
