@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -168,10 +168,10 @@ export default function EditarUsuarioScreen() {
       const userData = await usersService.getById(userId as string);
       setUser(userData);
       setFormData({
-        name: userData.name,
-        email: userData.email,
-        cpf: formatCPF(userData.cpf),
-        phone: formatPhone(userData.phone),
+        name: userData.name || "",
+        email: userData.email || "",
+        cpf: formatCPF(userData.cpf || ""),
+        phone: formatPhone(userData.phone || ""),
         role: userData.role,
         region: userData.region || "",
         city: userData.city || "",

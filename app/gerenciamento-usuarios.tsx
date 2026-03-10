@@ -1,4 +1,4 @@
-﻿import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import {
   View,
   Text,
@@ -81,7 +81,7 @@ export default function GerenciamentoUsuariosScreen() {
         (user) =>
           user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
           user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          user.cpf.includes(searchQuery)
+          (user.cpf && user.cpf.includes(searchQuery))
       );
     }
 
