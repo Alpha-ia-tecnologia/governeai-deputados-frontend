@@ -24,6 +24,9 @@ import {
   Search,
   Filter,
   Download,
+  MapPin,
+  ChevronLeft,
+  ChevronRight,
   Calendar,
   UserCheck,
 } from "lucide-react-native";
@@ -56,9 +59,12 @@ export default function VotersScreen() {
   const [selectedType, setSelectedType] = useState<string>("all");
   const [selectedNeighborhood, setSelectedNeighborhood] = useState<string>("all");
   const [selectedAtendLeader, setSelectedAtendLeader] = useState<string>("all");
+  const [selectedCity, setSelectedCity] = useState<string>("all");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [showFilters, setShowFilters] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 50;
 
   // ─── Eleitores helpers ───
   const selectedLeaderData = leaders.find((l) => l.id === selectedLeader);
@@ -111,10 +117,10 @@ export default function VotersScreen() {
     return uniqueTypes;
   }, [helpRecords]);
 
-  // Voter lookup for neighborhoods
+  // Voter lookup for neighborhoods and cities
   const voterMap = useMemo(() => {
-    const map: Record<string, { neighborhood?: string }> = {};
-    voters.forEach((v) => { map[v.id] = { neighborhood: v.neighborhood }; });
+    const map: Record<string, { neighborhood?: string; city?: string }> = {};
+    voters.forEach((v) => { map[v.id] = { neighborhood: v.neighborhood, city: v.city }; });
     return map;
   }, [voters]);
 
@@ -124,6 +130,14 @@ export default function VotersScreen() {
       .map((r) => voterMap[r.voterId]?.neighborhood)
       .filter((n): n is string => !!n && n.trim() !== "");
     return [...new Set(neighborhoods)].sort();
+  }, [helpRecords, voterMap]);
+
+  // Unique cities from voters linked to help records
+  const allCities = useMemo(() => {
+    const cities = helpRecords
+      .map((r) => voterMap[r.voterId]?.city)
+      .filter((c): c is string => !!c && c.trim() !== "");
+    return [...new Set(cities)].sort();
   }, [helpRecords, voterMap]);
 
   // Unique leaders from help records
@@ -172,6 +186,13 @@ export default function VotersScreen() {
       records = records.filter((r) => r.leaderName === selectedAtendLeader);
     }
 
+    if (selectedCity !== "all") {
+      records = records.filter((r) => {
+        const voterCity = voterMap[r.voterId]?.city;
+        return voterCity === selectedCity;
+      });
+    }
+
     const fromDate = parseDate(dateFrom);
     if (fromDate) {
       records = records.filter((r) => {
@@ -196,7 +217,17 @@ export default function VotersScreen() {
     });
 
     return records;
-  }, [helpRecords, atendSearch, selectedCategory, selectedStatus, selectedType, selectedNeighborhood, selectedAtendLeader, dateFrom, dateTo, voterMap]);
+  }, [helpRecords, atendSearch, selectedCategory, selectedStatus, selectedType, selectedNeighborhood, selectedAtendLeader, selectedCity, dateFrom, dateTo, voterMap]);
+
+  // Pagination
+  const totalPages = Math.ceil(filteredRecords.length / ITEMS_PER_PAGE);
+  const paginatedRecords = useMemo(() => {
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filteredRecords.slice(start, start + ITEMS_PER_PAGE);
+  }, [filteredRecords, currentPage]);
+
+  // Reset page when filters change
+  const resetPage = () => setCurrentPage(1);
 
   // Stats
   const stats = useMemo(() => {
@@ -229,13 +260,14 @@ export default function VotersScreen() {
   const handleExport = () => {
     try {
       const headers = [
-        "Data Atendimento", "Eleitor", "Bairro", "Tipo", "Categoria", "Status",
+        "Data Atendimento", "Eleitor", "Cidade", "Bairro", "Tipo", "Categoria", "Status",
         "Responsável", "Articulador Político", "Observações", "Data Registro",
       ];
 
       const rows = filteredRecords.map((r) => [
         formatDate(r.serviceDate || r.createdAt),
         r.voterName,
+        voterMap[r.voterId]?.city || "",
         voterMap[r.voterId]?.neighborhood || "",
         r.description || "",
         CategoryLabels[r.category] || r.category,
@@ -275,12 +307,14 @@ export default function VotersScreen() {
     setSelectedType("all");
     setSelectedNeighborhood("all");
     setSelectedAtendLeader("all");
+    setSelectedCity("all");
     setDateFrom("");
     setDateTo("");
     setAtendSearch("");
+    setCurrentPage(1);
   };
 
-  const hasActiveFilters = selectedCategory !== "all" || selectedStatus !== "all" || selectedType !== "all" || selectedNeighborhood !== "all" || selectedAtendLeader !== "all" || dateFrom || dateTo;
+  const hasActiveFilters = selectedCategory !== "all" || selectedStatus !== "all" || selectedType !== "all" || selectedNeighborhood !== "all" || selectedAtendLeader !== "all" || selectedCity !== "all" || dateFrom || dateTo;
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -529,6 +563,34 @@ export default function VotersScreen() {
           </View>
 
           <View style={styles.filterSection}>
+            <Text style={styles.filterSectionLabel}>Cidade</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              <View style={styles.chipRow}>
+                <TouchableOpacity
+                  style={[styles.chip, selectedCity === "all" && styles.chipSelected]}
+                  onPress={() => { setSelectedCity("all"); resetPage(); }}
+                >
+                  <Text style={[styles.chipText, selectedCity === "all" && styles.chipTextSelected]}>Todas</Text>
+                </TouchableOpacity>
+                {allCities.map((city) => (
+                  <TouchableOpacity
+                    key={city}
+                    style={[styles.chip, selectedCity === city && styles.chipSelected]}
+                    onPress={() => { setSelectedCity(city); resetPage(); }}
+                  >
+                    <Text
+                      style={[styles.chipText, selectedCity === city && styles.chipTextSelected]}
+                      numberOfLines={1}
+                    >
+                      {city}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </ScrollView>
+          </View>
+
+          <View style={styles.filterSection}>
             <Text style={styles.filterSectionLabel}>Categoria</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
               <View style={styles.chipRow}>
@@ -686,7 +748,7 @@ export default function VotersScreen() {
         </View>
       ) : (
         <View style={styles.recordsList}>
-          {filteredRecords.map((record) => (
+          {paginatedRecords.map((record) => (
             <TouchableOpacity
               key={record.id}
               style={styles.recordCard}
@@ -716,6 +778,12 @@ export default function VotersScreen() {
                   <Text style={styles.recordInfoText}>{record.voterName}</Text>
                 </View>
                 <View style={styles.recordInfoRow}>
+                  <MapPin color={Colors.light.textSecondary} size={14} />
+                  <Text style={styles.recordInfoText}>
+                    {voterMap[record.voterId]?.city || "—"}{voterMap[record.voterId]?.neighborhood ? ` • ${voterMap[record.voterId]?.neighborhood}` : ""}
+                  </Text>
+                </View>
+                <View style={styles.recordInfoRow}>
                   <UserCheck color={Colors.light.textSecondary} size={14} />
                   <Text style={styles.recordInfoText}>{record.responsibleName || "—"}</Text>
                 </View>
@@ -731,6 +799,36 @@ export default function VotersScreen() {
               ) : null}
             </TouchableOpacity>
           ))}
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <View style={styles.paginationContainer}>
+              <TouchableOpacity
+                style={[styles.paginationButton, currentPage === 1 && styles.paginationButtonDisabled]}
+                onPress={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                disabled={currentPage === 1}
+              >
+                <ChevronLeft color={currentPage === 1 ? Colors.light.border : Colors.light.primary} size={20} />
+                <Text style={[styles.paginationButtonText, currentPage === 1 && styles.paginationButtonTextDisabled]}>Anterior</Text>
+              </TouchableOpacity>
+              <View style={styles.paginationInfo}>
+                <Text style={styles.paginationInfoText}>
+                  {currentPage} / {totalPages}
+                </Text>
+                <Text style={styles.paginationInfoSubtext}>
+                  {(currentPage - 1) * ITEMS_PER_PAGE + 1}-{Math.min(currentPage * ITEMS_PER_PAGE, filteredRecords.length)} de {filteredRecords.length}
+                </Text>
+              </View>
+              <TouchableOpacity
+                style={[styles.paginationButton, currentPage === totalPages && styles.paginationButtonDisabled]}
+                onPress={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                disabled={currentPage === totalPages}
+              >
+                <Text style={[styles.paginationButtonText, currentPage === totalPages && styles.paginationButtonTextDisabled]}>Próximo</Text>
+                <ChevronRight color={currentPage === totalPages ? Colors.light.border : Colors.light.primary} size={20} />
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
       )}
 
@@ -1285,4 +1383,51 @@ const styles = StyleSheet.create({
   leaderItemNameSelected: { color: Colors.light.primary, fontWeight: "600" as const },
   leaderItemCount: { fontSize: 13, color: Colors.light.textSecondary, marginTop: 2 },
   divider: { height: 1, backgroundColor: Colors.light.border, marginVertical: 8 },
+  // Pagination
+  paginationContainer: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    justifyContent: "space-between" as const,
+    marginTop: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 4,
+    borderTopWidth: 1,
+    borderTopColor: Colors.light.border,
+  },
+  paginationButton: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    gap: 4,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 10,
+    backgroundColor: Colors.light.card,
+    borderWidth: 1,
+    borderColor: Colors.light.primary + "40",
+  },
+  paginationButtonDisabled: {
+    borderColor: Colors.light.border,
+    backgroundColor: Colors.light.backgroundSecondary,
+  },
+  paginationButtonText: {
+    fontSize: 14,
+    fontWeight: "600" as const,
+    color: Colors.light.primary,
+  },
+  paginationButtonTextDisabled: {
+    color: Colors.light.border,
+  },
+  paginationInfo: {
+    alignItems: "center" as const,
+  },
+  paginationInfoText: {
+    fontSize: 15,
+    fontWeight: "700" as const,
+    color: Colors.light.text,
+  },
+  paginationInfoSubtext: {
+    fontSize: 12,
+    color: Colors.light.textSecondary,
+    marginTop: 2,
+  },
 });
