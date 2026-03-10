@@ -158,7 +158,7 @@ export default function AddHelpScreen() {
       const vereadorId = voter.vereadorId || leader?.vereadorId;
 
       if (!vereadorId) {
-        showToast({ type: 'error', title: 'Erro', message: 'Não foi possível identificar o vereador responsável.' });
+        showToast({ type: 'error', title: 'Erro', message: 'Não foi possível identificar o deputado responsável.' });
         setIsSubmitting(false);
         return;
       }

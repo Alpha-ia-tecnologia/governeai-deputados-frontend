@@ -362,7 +362,7 @@ export default function WhatsappTemplatesScreen() {
                             <Text style={[styles.label, { color: colors.textSecondary }]}>Rodapé (opcional)</Text>
                             <TextInput
                                 style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.backgroundSecondary }]}
-                                placeholder="Gabinete do Vereador"
+                                placeholder="Gabinete do Deputado"
                                 placeholderTextColor={colors.textMuted}
                                 value={formFooterText}
                                 onChangeText={setFormFooterText}

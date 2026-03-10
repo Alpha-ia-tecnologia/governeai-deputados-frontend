@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -120,7 +120,7 @@ export default function AddLeaderScreen() {
     }
     // Admin deve selecionar um vereador
     if (isAdmin && !selectedVereador) {
-      showToast({ type: 'error', title: 'Campo obrigatório', message: 'Selecione o vereador responsável' });
+      showToast({ type: 'error', title: 'Campo obrigatório', message: 'Selecione o deputado responsável' });
       return false;
     }
     return true;
@@ -212,7 +212,7 @@ export default function AddLeaderScreen() {
           {isAdmin && (
             <View style={styles.inputGroup}>
               <Text style={styles.label}>
-                Vereador Responsável <Text style={styles.required}>*</Text>
+                Deputado Responsável <Text style={styles.required}>*</Text>
               </Text>
               {loadingVereadores ? (
                 <View style={styles.loadingContainer}>
@@ -231,7 +231,7 @@ export default function AddLeaderScreen() {
                         !selectedVereador && styles.pickerPlaceholder,
                       ]}
                     >
-                      {selectedVereador?.name || "Selecione um vereador"}
+                      {selectedVereador?.name || "Selecione um deputado"}
                     </Text>
                     <ChevronDown color={Colors.light.textSecondary} size={20} />
                   </TouchableOpacity>
