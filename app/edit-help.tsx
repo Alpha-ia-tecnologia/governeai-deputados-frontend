@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   View,
   Text,
@@ -16,7 +16,8 @@ import { useToast } from "@/contexts/ToastContext";
 import Colors from "@/constants/colors";
 import { HelpCategory, HelpStatus } from "@/types";
 import { CategoryLabels, StatusLabels } from "@/constants/labels";
-import { ArrowLeft, Save } from "lucide-react-native";
+import { DEFAULT_ATENDIMENTO_TYPES } from "@/constants/atendimento-types";
+import { ArrowLeft, Save, Search, Plus, X, ChevronDown } from "lucide-react-native";
 
 export default function EditHelpScreen() {
   const { helpId } = useLocalSearchParams();
@@ -33,6 +34,54 @@ export default function EditHelpScreen() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [voterName, setVoterName] = useState("");
   const [isLayoutMounted, setIsLayoutMounted] = useState(false);
+
+  // Estado do dropdown pesquisável de atendimento
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [customTypes, setCustomTypes] = useState<string[]>([]);
+
+  // Combinar tipos pré-definidos com tipos customizados
+  const allTypes = useMemo(() => {
+    const combined = [...DEFAULT_ATENDIMENTO_TYPES, ...customTypes];
+    return [...new Set(combined)];
+  }, [customTypes]);
+
+  // Filtrar tipos baseado na busca
+  const filteredTypes = useMemo(() => {
+    if (!searchQuery.trim()) return allTypes;
+    return allTypes.filter((type) =>
+      type.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [allTypes, searchQuery]);
+
+  // Verificar se o texto digitado é novo
+  const canCreateNew = useMemo(() => {
+    if (!searchQuery.trim()) return false;
+    return !allTypes.some(
+      (type) => type.toLowerCase() === searchQuery.trim().toLowerCase()
+    );
+  }, [allTypes, searchQuery]);
+
+  const handleSelectType = (type: string) => {
+    setDescription(type);
+    setSearchQuery("");
+    setIsDropdownOpen(false);
+  };
+
+  const handleCreateNewType = () => {
+    const newType = searchQuery.trim();
+    if (newType) {
+      setCustomTypes((prev) => [...prev, newType]);
+      setDescription(newType);
+      setSearchQuery("");
+      setIsDropdownOpen(false);
+    }
+  };
+
+  const handleClearSelection = () => {
+    setDescription("");
+    setSearchQuery("");
+  };
 
   // Função de navegação segura para voltar
   const handleGoBack = () => {
@@ -70,9 +119,20 @@ export default function EditHelpScreen() {
         setNotes(helpRecord.notes || "");
         setSelectedLeaderId(helpRecord.leaderId);
         setVoterName(helpRecord.voterName);
+
+        // Se a descrição salva não está nos tipos padrão, adicionar como tipo custom
+        if (
+          helpRecord.description &&
+          !DEFAULT_ATENDIMENTO_TYPES.some(
+            (t) => t.toLowerCase() === helpRecord.description.toLowerCase()
+          )
+        ) {
+          setCustomTypes((prev) => [...prev, helpRecord.description]);
+        }
+
         setIsLoading(false);
       } else if (isLayoutMounted) {
-        showToast({ type: 'error', title: 'Erro', message: 'Registro de ajuda não encontrado' });
+        showToast({ type: 'error', title: 'Erro', message: 'Registro de atendimento não encontrado' });
         handleGoBack();
       }
     }
@@ -85,7 +145,7 @@ export default function EditHelpScreen() {
     }
 
     if (!description.trim()) {
-      showToast({ type: 'error', title: 'Campo obrigatório', message: 'Por favor, descreva a ajuda prestada' });
+      showToast({ type: 'error', title: 'Campo obrigatório', message: 'Por favor, selecione o tipo de atendimento' });
       return;
     }
 
@@ -104,11 +164,11 @@ export default function EditHelpScreen() {
         vereadorId: selectedLeader?.vereadorId, // Atualiza o vereadorId baseado na Articulador Político
       });
 
-      showToast({ type: 'success', title: 'Sucesso', message: 'Ajuda atualizada com sucesso!' });
+      showToast({ type: 'success', title: 'Sucesso', message: 'Atendimento atualizado com sucesso!' });
       setTimeout(() => handleGoBack(), 1500);
     } catch (error: any) {
       console.error("Error updating help record:", error);
-      showToast({ type: 'error', title: 'Erro', message: error.message || 'Não foi possível atualizar a ajuda' });
+      showToast({ type: 'error', title: 'Erro', message: error.message || 'Não foi possível atualizar o atendimento' });
     } finally {
       setIsSubmitting(false);
     }
@@ -127,7 +187,7 @@ export default function EditHelpScreen() {
     <>
       <Stack.Screen
         options={{
-          title: "Editar Ajuda",
+          title: "Editar Atendimento",
           headerStyle: {
             backgroundColor: Colors.light.primary,
           },
@@ -142,7 +202,7 @@ export default function EditHelpScreen() {
           ),
         }}
       />
-      <ScrollView style={styles.container}>
+      <ScrollView style={styles.container} keyboardShouldPersistTaps="handled">
         <View style={styles.form}>
           <View style={styles.infoCard}>
             <Text style={styles.infoLabel}>Eleitor:</Text>
@@ -176,6 +236,91 @@ export default function EditHelpScreen() {
             </View>
           </View>
 
+          {/* Tipo de Atendimento - Dropdown Pesquisável */}
+          <View style={styles.field}>
+            <Text style={styles.label}>
+              Tipo de Atendimento <Text style={styles.required}>*</Text>
+            </Text>
+
+            {description ? (
+              <View style={styles.selectedContainer}>
+                <Text style={styles.selectedText}>{description}</Text>
+                <TouchableOpacity
+                  onPress={handleClearSelection}
+                  style={styles.clearButton}
+                >
+                  <X color={Colors.light.textSecondary} size={18} />
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <View style={styles.dropdownContainer}>
+                <TouchableOpacity
+                  style={styles.searchInputContainer}
+                  onPress={() => setIsDropdownOpen(true)}
+                  activeOpacity={0.8}
+                >
+                  <Search color={Colors.light.textSecondary} size={18} />
+                  <TextInput
+                    style={styles.searchInput}
+                    value={searchQuery}
+                    onChangeText={(text) => {
+                      setSearchQuery(text);
+                      if (!isDropdownOpen) setIsDropdownOpen(true);
+                    }}
+                    placeholder="Pesquisar tipo de atendimento..."
+                    placeholderTextColor={Colors.light.textSecondary}
+                    onFocus={() => setIsDropdownOpen(true)}
+                  />
+                  <ChevronDown
+                    color={Colors.light.textSecondary}
+                    size={18}
+                    style={{ transform: [{ rotate: isDropdownOpen ? "180deg" : "0deg" }] }}
+                  />
+                </TouchableOpacity>
+
+                {isDropdownOpen && (
+                  <View style={styles.dropdownList}>
+                    <ScrollView
+                      style={styles.dropdownScroll}
+                      nestedScrollEnabled
+                      keyboardShouldPersistTaps="handled"
+                    >
+                      {filteredTypes.map((type, index) => (
+                        <TouchableOpacity
+                          key={`type-${index}`}
+                          style={styles.dropdownItem}
+                          onPress={() => handleSelectType(type)}
+                        >
+                          <Text style={styles.dropdownItemText}>{type}</Text>
+                        </TouchableOpacity>
+                      ))}
+
+                      {filteredTypes.length === 0 && !canCreateNew && (
+                        <View style={styles.dropdownEmpty}>
+                          <Text style={styles.dropdownEmptyText}>
+                            Nenhum tipo encontrado
+                          </Text>
+                        </View>
+                      )}
+
+                      {canCreateNew && (
+                        <TouchableOpacity
+                          style={styles.createNewButton}
+                          onPress={handleCreateNewType}
+                        >
+                          <Plus color={Colors.light.primary} size={18} />
+                          <Text style={styles.createNewButtonText}>
+                            Cadastrar "{searchQuery.trim()}"
+                          </Text>
+                        </TouchableOpacity>
+                      )}
+                    </ScrollView>
+                  </View>
+                )}
+              </View>
+            )}
+          </View>
+
           <View style={styles.field}>
             <Text style={styles.label}>
               Categoria <Text style={styles.required}>*</Text>
@@ -201,22 +346,6 @@ export default function EditHelpScreen() {
                 </TouchableOpacity>
               ))}
             </View>
-          </View>
-
-          <View style={styles.field}>
-            <Text style={styles.label}>
-              Descrição <Text style={styles.required}>*</Text>
-            </Text>
-            <TextInput
-              style={[styles.input, styles.textArea]}
-              value={description}
-              onChangeText={setDescription}
-              placeholder="Descreva a ajuda prestada..."
-              placeholderTextColor={Colors.light.textSecondary}
-              multiline
-              numberOfLines={4}
-              textAlignVertical="top"
-            />
           </View>
 
           <View style={styles.field}>
@@ -350,6 +479,108 @@ const styles = StyleSheet.create({
   textArea: {
     minHeight: 100,
     paddingTop: 14,
+  },
+  // Dropdown pesquisável
+  dropdownContainer: {
+    position: "relative" as const,
+    zIndex: 10,
+  },
+  searchInputContainer: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    backgroundColor: Colors.light.card,
+    borderWidth: 1,
+    borderColor: Colors.light.border,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    gap: 10,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    color: Colors.light.text,
+    paddingVertical: 0,
+  },
+  dropdownList: {
+    backgroundColor: Colors.light.card,
+    borderWidth: 1,
+    borderColor: Colors.light.border,
+    borderRadius: 12,
+    marginTop: 4,
+    overflow: "hidden" as const,
+    ...Platform.select({
+      ios: {
+        shadowColor: Colors.light.shadow,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.15,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 6,
+      },
+      web: {
+        boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+      },
+    }),
+  },
+  dropdownScroll: {
+    maxHeight: 240,
+  },
+  dropdownItem: {
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.light.border + "40",
+  },
+  dropdownItemText: {
+    fontSize: 15,
+    color: Colors.light.text,
+  },
+  dropdownEmpty: {
+    paddingHorizontal: 16,
+    paddingVertical: 20,
+    alignItems: "center" as const,
+  },
+  dropdownEmptyText: {
+    fontSize: 14,
+    color: Colors.light.textSecondary,
+    fontStyle: "italic" as const,
+  },
+  createNewButton: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    backgroundColor: Colors.light.primary + "10",
+    borderTopWidth: 1,
+    borderTopColor: Colors.light.border,
+  },
+  createNewButtonText: {
+    fontSize: 15,
+    fontWeight: "600" as const,
+    color: Colors.light.primary,
+  },
+  selectedContainer: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    backgroundColor: Colors.light.primary + "15",
+    borderWidth: 1,
+    borderColor: Colors.light.primary + "40",
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    gap: 10,
+  },
+  selectedText: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: "600" as const,
+    color: Colors.light.primary,
+  },
+  clearButton: {
+    padding: 4,
   },
   chipContainer: {
     flexDirection: "row" as const,

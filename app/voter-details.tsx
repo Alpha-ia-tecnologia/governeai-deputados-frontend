@@ -1,4 +1,4 @@
-﻿import React, { useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
   View,
   Text,
@@ -142,8 +142,8 @@ export default function VoterDetailsScreen() {
 
   const handleDeleteHelp = (help: HelpRecord) => {
     showAlert({
-      title: "Excluir Ajuda",
-      description: `Tem certeza que deseja excluir este registro de ajuda?`,
+      title: "Excluir Atendimento",
+      description: `Tem certeza que deseja excluir este registro de atendimento?`,
       variant: "danger",
       confirmText: "Excluir",
       cancelText: "Cancelar",
@@ -155,9 +155,9 @@ export default function VoterDetailsScreen() {
     setDeletingHelpId(helpId);
     try {
       await deleteHelpRecord(helpId);
-      showToast({ type: 'success', title: 'Sucesso', message: 'Ajuda excluída com sucesso!' });
+      showToast({ type: 'success', title: 'Sucesso', message: 'Atendimento excluído com sucesso!' });
     } catch (error: any) {
-      const errorMessage = error.message || "Não foi possível excluir a ajuda";
+      const errorMessage = error.message || "Não foi possível excluir o atendimento";
       showToast({ type: 'error', title: 'Erro', message: errorMessage });
     } finally {
       setDeletingHelpId(null);
@@ -260,7 +260,7 @@ export default function VoterDetailsScreen() {
           </View>
           <View style={styles.timelineContent}>
             <View style={styles.timelineHeader}>
-              <Text style={styles.timelineTitle}>Ajuda Prestada</Text>
+              <Text style={styles.timelineTitle}>Atendimento Realizado</Text>
               <View style={styles.statusBadge}>
                 {getStatusIcon(help.status)}
                 <Text
@@ -453,7 +453,7 @@ export default function VoterDetailsScreen() {
             <View style={styles.statsRow}>
               <View style={styles.statItem}>
                 <HeartHandshake color={Colors.light.primary} size={16} />
-                <Text style={styles.statText}>{voterHelps.length} ajudas</Text>
+                <Text style={styles.statText}>{voterHelps.length} atendimentos</Text>
               </View>
               <View style={styles.statItem}>
                 <MapPin color={Colors.light.secondary} size={16} />
@@ -484,7 +484,7 @@ export default function VoterDetailsScreen() {
             }
           >
             <Plus color="#fff" size={20} />
-            <Text style={styles.actionButtonText}>Registrar Ajuda</Text>
+            <Text style={styles.actionButtonText}>Registrar Atendimento</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
